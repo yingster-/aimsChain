@@ -1,0 +1,7 @@
+run_aims poe /u/yyao/bin/aims.111212_2.scalapack.mpi.x
+method string
+force_thres 0.01
+initial_file ini.in
+final_file fin.in
+n_images 8
+

@@ -1,0 +1,153 @@
+import numpy as np
+from numpy.linalg import eigh, solve
+
+import cPickle as cp
+
+class BFGS(object):
+    def __init__(self, restart="hess", maxstep=0.04, 
+                 alpha = 70, mask = False):
+        """BFGS optimizer.while force > 0.01:
+
+        Parameters:
+
+        restart: string
+            Pickle file used to store hessian matrix. If set, file with 
+            such a name will be searched and hessian matrix stored will
+            be used, if the file exists.
+      
+        maxstep: float
+            Used to set the maximum distance an atom can move per
+            iteration (default value is 0.04 A).
+        """
+        
+        if maxstep is not None:
+            if maxstep > 1.0:
+                raise ValueError('You are using a much too large value for ' +
+                                 'the maximum step size: %.1f A' % maxstep)
+            self.maxstep = maxstep
+        self.restart = restart
+        self.alpha = alpha
+        self.usemask = bool(mask)
+
+    def initialize(self):
+        self.H = None
+        self.r0 = None
+        self.f0 = None
+        self.mask = None
+        
+
+    def load(self):
+        """
+        load saved hessian, positions, and forces
+        """
+        import os.path as path
+        if path.isfile(self.restart):
+            hess = open(self.restart, 'r')
+            self.H, self.r0, self.f0, self.mask = cp.load(hess)
+            hess.close()
+
+    def dump(self):
+        """
+        dump necessary values for future reference
+        """
+        hess = open(self.restart, 'w')
+        cp.dump((self.H, self.r0, self.f0, self.mask),
+                hess)
+        hess.close()
+
+    def step(self, r, f):
+        """
+        Tkae a single step
+        """
+        r = np.array(r)
+        f = np.array(f).flatten()
+
+        self.update(r, f)
+        if self.usemask:
+            self.apply_mask(len(r[0])*3)
+
+        dr = self.H.dot(f)
+
+        dr = dr.reshape(-1,3)
+        dr = self.determine_step(dr)
+        dr = np.reshape(dr, np.shape(r))
+
+        self.r0 = r.flatten()
+        self.f0 = f.flatten()
+
+
+        return r+dr
+
+    def determine_step(self, dr):
+        """Determine step to take according to maxstep
+        
+        Normalize all steps as the largest step. This way
+        we still move along the eigendirection.
+        """
+        steplengths = (dr**2).sum(1)**0.5
+        maxsteplength = np.max(steplengths)
+        if maxsteplength >= self.maxstep:
+            dr *= self.maxstep / maxsteplength
+        
+        return dr
+
+    def update(self, r, f):
+
+        r = r.flatten()
+        f = f.flatten()
+        if self.H is None:
+            self.H = np.eye(len(r)) * (1.0/self.alpha)
+            self.r0 = r
+            self.f0 = f
+            return
+
+        r0 = self.r0
+        f0 = self.f0
+
+        sk = r.reshape(-1) - r0.reshape(-1)
+
+        if np.abs(sk).max() < 1e-7:
+            # Same configuration again (maybe a restart):
+            return
+
+        yk = f0.reshape(-1) - f.reshape(-1)
+        try:
+            rhok = 1.0/(np.dot(yk,sk))
+        except ZeroDivisionError:
+            rhok = 1000.0
+        if np.isinf(rhok):
+            rhok = 1000.0
+
+#        if rhok >= 0:
+        I = np.eye(len(r))
+        A1 = I - sk[:,np.newaxis] * yk[np.newaxis,:] * rhok
+        A2 = I - yk[:,np.newaxis] * sk[np.newaxis,:] * rhok
+        
+        self.H = (np.dot(A1,np.dot(self.H,A2)) 
+                  + rhok * sk[:,np.newaxis] * sk[np.newaxis,:])
+#        self.H = self.H * ((np.sign(self.H)+1)/2)
+
+    def apply_mask(self, n = None):
+        if self.H == None:
+            return
+                       
+        if n ==  None:
+            return
+        elif self.mask == None:
+            n = int(n)
+            self.mask = np.zeros(self.H.shape)
+            ntotal = len(self.mask[0])
+            upper = 2*n
+            lower = -1*n
+            counter = 0
+            for i in range(ntotal):
+                for j in range(ntotal):
+                    if (lower <= j) and (j < upper):
+                        self.mask[i][j] = 1
+                counter += 1
+                if counter == n:
+                    upper += n
+                    lower += n
+                    counter = 0
+
+        self.H = self.H * self.mask
