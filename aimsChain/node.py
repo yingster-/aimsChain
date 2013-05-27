@@ -393,7 +393,7 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if globalopt:
-            hess = os.path.join(nodes[0].dir_pre, "neb.opt")
+            hess = os.path.join(self.nodes[0].dir_pre, "neb.opt")
             opt = BFGS(hess, alpha = 70)
             opt.initialize()
             opt.load()
