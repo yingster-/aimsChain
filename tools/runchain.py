@@ -35,31 +35,36 @@ finnode = Node(param = 1.0,
                geometry = read_aims(control.fin),
                fixed = True)
 #parse the externl geometry and such
-nodes = [ininode]
-if control.ext_geo and os.path.isfile(str(control.ext_geo)):
-    geo = open(control.ext_geo)
-    lines = geo.readlines()
-    geo.close()
-    for line in lines:
-        inp = line.split()
-        if inp == []:
-            continue
-        elif inp[0][0] == '#':
-            continue
-        else:
-            if os.path.isfile(inp[0]):
-                nodes.append(Node(param = 0.5, 
-                                  geometry = read_aims(inp[0]), 
-                                  fixed = False))
-    nodes.append(finnode)
-    geos = []
-    for node in nodes:
-        geos.append(node.positions)
-    t = get_t(geos)
-    print t
-    for i in range(len(t)):
-        nodes[i].param = t[i]
-    path.nodes = nodes
+try:
+    nodes = [ininode]
+    if control.ext_geo and os.path.isfile(str(control.ext_geo)):
+        geo = open(control.ext_geo)
+        lines = geo.readlines()
+        geo.close()
+        for line in lines:
+            inp = line.split()
+            if inp == []:
+                continue
+            elif inp[0][0] == '#':
+                continue
+            else:
+                if os.path.isfile(inp[0]):
+                    nodes.append(Node(param = 0.5, 
+                                      geometry = read_aims(inp[0]), 
+                                      fixed = False))
+        nodes.append(finnode)
+        geos = []
+        for node in nodes:
+            geos.append(node.positions)
+        t = get_t(geos)
+        print t
+        for i in range(len(t)):
+            nodes[i].param = t[i]
+        path.nodes = nodes
+except:
+    print '!Error interprating the external geometries\n'
+    print '!Using standard interpolation method for initial geometries\n'
+    
 
 if len(nodes) <= 2:
     path.nodes = [ininode, finnode]
@@ -108,13 +113,14 @@ if control.use_climb:
             path.add_runs()
             path_to_run = path.write_node()
         forcelog.write('%16.16f \n' % force)
+        forcelog.flush()
         path.write_path()
     forcelog.close()
 
-#try:
-os.mkdir('optimized')
-#except:
-#    pass
+try:
+    os.mkdir('optimized')
+except OSError:
+    print "Directory optimized already exist"
 
 for i,dir in enumerate(path.get_paths()):
     dir_util.copy_tree(dir, os.path.join('optimized', "image%02d" % i))

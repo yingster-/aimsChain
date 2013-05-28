@@ -500,7 +500,7 @@ class Path(object):
         """
         move the climbing nodes using BFGS
         """
-        from aimsChain.optimizer.newbfgs import BFGS
+        from aimsChain.optimizer.fire import FIRE
         import os
         moving_nodes = []
         all_forces = []
@@ -513,10 +513,11 @@ class Path(object):
             climb_force = node.climb_forces
             all_forces.append(climb_force)
 
-            opt = BFGS(hess)
+            opt = FIRE(hess)
             opt.initialize()
             opt.load()
-            node.positions = opt.step(node.positions,climb_force)
+            node.positions = opt.step(node.positions,
+                                      climb_force)
             opt.dump()
         
         all_forces = np.reshape(all_forces, (-1,3))
