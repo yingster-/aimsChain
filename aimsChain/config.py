@@ -18,6 +18,7 @@ class control(object):
         self.run_aims = "mpiexec -ppn 8 -n $NSLOTS ~/bin/aims.081912.scalapack.mpi.x"
         self.ext_geo = None
         self.method = "string"
+        self.global_opt = True
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -54,6 +55,9 @@ class control(object):
                     else:
                         self.method = 'string'
                         print "Using string method for MEP finding\n"
+                else inp[0] == "global_optimizer":
+                    self.global_opt = parse_bool(inp[1])
+
         #assign climbing thres if it's not set
         if self.climb_thres == None:
             self.climb_thres = self.thres

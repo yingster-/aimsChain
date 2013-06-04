@@ -8,7 +8,7 @@ Path is a collection of nodes, with some additional functions
 
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
-
+from aimsChain.config import control
 class Node(object):
     """
     Class for a single Node
@@ -22,7 +22,8 @@ class Node(object):
                  geometry = None,
                  path = None,
                  dir = None,
-                 fixed = False):
+                 fixed = False,
+                 control = None):
         from aimsChain.atom import Atoms
         self.__param = float(param)
         self.__geometry = geometry
@@ -33,7 +34,12 @@ class Node(object):
         self.__fixed = fixed
         self.__climb = False
         self.__dir_pre = "iterations"
-    
+        self.__control = control
+        if self.__control == None:
+            self.__control = control()
+    @property
+    def control(self):
+        return self.__control
     @property
     def param(self):
         return self.__param
@@ -126,7 +132,6 @@ class Node(object):
         tangent = self.get_tangent()
         tan1 = self.next.positions - self.positions
         tan2 = self.positions - self.prev.positions
-#        forces += k*tan1 - k*tan2
         mag = (vmag(tan1) - vmag(tan2))
         forces += k * mag * tangent
         return forces
@@ -374,7 +379,7 @@ class Path(object):
             return 1.0
 
 
-    def move_neb(self, globalopt = True):
+    def move_neb(self):
         """
         move the nodes according to NEB rules
         """
@@ -392,14 +397,14 @@ class Path(object):
       
         forces = np.array(forces)
         positions = np.array(positions)
-        if globalopt:
+        if self.control.global_opt:
             hess = os.path.join(self.nodes[0].dir_pre, "neb.opt")
             opt = BFGS(hess, alpha = 70)
             opt.initialize()
             opt.load()
             new_pos = opt.step(positions, forces)
             opt.dump()
-        if not globalopt:
+        else:
             for i,node in enumerate(self.nodes):
                 hess = "%.4f.opt" % node.param
                 hess = os.path.join(node.dir_pre, hess)
@@ -418,7 +423,7 @@ class Path(object):
 
         return np.nanmax(forces)
             
-    def move_string(self, globalopt = True):
+    def move_string(self):
         """
         move the node according to normal force
         the original string method
@@ -426,6 +431,7 @@ class Path(object):
         from aimsChain.optimizer.euler import EULER
         from aimsChain.optimizer.lbfgs import LBFGS
         from aimsChain.optimizer.newbfgs import BFGS
+        from aimsChain.optimizer.dampedbfgs import dampedBFGS
         from aimsChain.optimizer.fire import FIRE
         from aimsChain.interpolate import spline_pos
         import os
@@ -446,13 +452,14 @@ class Path(object):
 
         forces = np.array(forces)
         positions = np.array(positions)
-        if globalopt:
-            opt = BFGS("string.opt")
+        if self.control.global_opt:
+            hess = os.path.join(self.nodes[0].dir_pre, "neb.opt")
+            opt = dampedBFGS(hess)
             opt.initialize()
             opt.load()
             new_pos = opt.step(positions, forces)
             opt.dump()
-        if not globalopt:
+        else:
             for i,node in enumerate(self.nodes):
                 hess = "%.4f.opt" % node.param
                 hess = os.path.join(node.dir_pre, hess)

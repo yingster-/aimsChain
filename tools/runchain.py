@@ -78,21 +78,22 @@ path.write_path()
 #path.write_path()
 forcelog = open("forces.log", 'w')
 forcelog.write("#Residual Forces in the system:\n")
-
+forcelog.flush()
 while force > control.thres:
 #    forcelog = open("forces.log", 'a')
     run_aims(path_to_run)
     path.load_nodes()
     if control.method == "neb":
-        force = path.move_neb(False)
+        force = path.move_neb()
     elif control.method == "string":
-        force = path.move_string(False)
+        force = path.move_string()
     if force > control.thres:
         path.add_runs()
         path_to_run = path.write_node()
     forcelog.write('%16.16f \n' % force)
     forcelog.flush()
     path.write_path()
+forcelog.write("System has converged.\n")
 forcelog.close()
 
 
@@ -115,6 +116,7 @@ if control.use_climb:
         forcelog.write('%16.16f \n' % force)
         forcelog.flush()
         path.write_path()
+    forcelog.write('Climbing image has converged.\n')
     forcelog.close()
 
 try:

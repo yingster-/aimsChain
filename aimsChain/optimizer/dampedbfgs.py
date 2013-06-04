@@ -3,9 +3,9 @@ from numpy.linalg import eigh, solve
 
 import cPickle as cp
 
-class BFGS(object):
+class dampedBFGS(object):
     def __init__(self, restart="hess", maxstep=0.04, 
-                 alpha = 70, mask = False):
+                 alpha = 70):
         """BFGS optimizer.while force > 0.01:
 
         Parameters:
@@ -26,13 +26,12 @@ class BFGS(object):
             self.maxstep = maxstep
         self.restart = restart
         self.alpha = alpha
-        self.usemask = bool(mask)
 
     def initialize(self):
         self.H = None
         self.r0 = None
         self.f0 = None
-        self.mask = None
+
         
 
     def load(self):
@@ -42,7 +41,7 @@ class BFGS(object):
         import os.path as path
         if path.isfile(self.restart):
             hess = open(self.restart, 'r')
-            self.H, self.r0, self.f0, self.mask = cp.load(hess)
+            self.H, self.r0, self.f0 = cp.load(hess)
             hess.close()
 
     def dump(self):
@@ -50,7 +49,7 @@ class BFGS(object):
         dump necessary values for future reference
         """
         hess = open(self.restart, 'w')
-        cp.dump((self.H, self.r0, self.f0, self.mask),
+        cp.dump((self.H, self.r0, self.f0),
                 hess)
         hess.close()
 
@@ -62,8 +61,6 @@ class BFGS(object):
         f = np.array(f).flatten()
 
         self.update(r, f)
-        if self.usemask:
-            self.apply_mask(len(r[0])*3)
 
         dr = self.H.dot(f)
 
@@ -83,6 +80,7 @@ class BFGS(object):
         Normalize all steps as the largest step. This way
         we still move along the eigendirection.
         """
+        
         steplengths = (dr**2).sum(1)**0.5
         maxsteplength = np.max(steplengths)
         if maxsteplength >= self.maxstep:
@@ -109,49 +107,34 @@ class BFGS(object):
             # Same configuration again (maybe a restart):
             return
 
+        #force is negative!
+        
         yk = f0.reshape(-1) - f.reshape(-1)
+        rhok=np.dot(yk,sk)
+        
+        #print sk
+        #print yk
+        print "rhok  " + str(rhok)
+        theta = 1
+        thres = 0.2*np.dot(sk,self.H).dot(sk)
+        
+        if rhok < thres:
+            theta = (4*thres)/(5*thres-rhok)
+#            print "damped!"
+#            self.H = np.eye(len(r))*(0.1/self.alpha)
+            return
+        #yk =  theta * yk + (1 -theta)*np.dot(sk,self.H)
+        #BFGS update formula
+        I= np.eye(len(r))
         try:
             rhok = 1.0/(np.dot(yk,sk))
         except ZeroDivisionError:
             rhok = 1000.0
-        if np.isinf(rhok):
+        if np.isinf(rhok) or float(rhok) >=1000:
             rhok = 1000.0
-
-#        if rhok >= 0:
-        I = np.eye(len(r))
         A1 = I - sk[:,np.newaxis] * yk[np.newaxis,:] * rhok
         A2 = I - yk[:,np.newaxis] * sk[np.newaxis,:] * rhok
         
         self.H = (np.dot(A1,np.dot(self.H,A2)) 
-                  + rhok * sk[:,np.newaxis] * sk[np.newaxis,:])
-#        self.H = self.H * ((np.sign(self.H)+1)/2)
-
-    def apply_mask(self, n = None):
-        """
-        This mask is used to mask out part of the Hessian so that we only keep
-        the diagonal blocks and the block right off the diagonal.
-        This does not seem to resolve the issue with BFGS.
-        It is kept here only for reference purposes. Do not attempt to use it. 
-        """
-        if self.H == None:
-            return
-        if n ==  None:
-            return
-        elif self.mask == None:
-            n = int(n)
-            self.mask = np.zeros(self.H.shape)
-            ntotal = len(self.mask[0])
-            upper = 2*n
-            lower = -1*n
-            counter = 0
-            for i in range(ntotal):
-                for j in range(ntotal):
-                    if (lower <= j) and (j < upper):
-                        self.mask[i][j] = 1
-                counter += 1
-                if counter == n:
-                    upper += n
-                    lower += n
-                    counter = 0
-
-        self.H = self.H * self.mask
+                  + rhok * np.outer(sk,sk))
+        
