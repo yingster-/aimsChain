@@ -24,8 +24,8 @@ def run_aims(paths):
     paths = []
 
 
-path = Path()
 control = control()
+path = Path(control=control)
 force = 1.0
 #set the initial and final image
 ininode = Node(param = 0.0, 

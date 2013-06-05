@@ -55,7 +55,7 @@ class control(object):
                     else:
                         self.method = 'string'
                         print "Using string method for MEP finding\n"
-                else inp[0] == "global_optimizer":
+                elif inp[0] == "global_optimizer":
                     self.global_opt = parse_bool(inp[1])
 
         #assign climbing thres if it's not set

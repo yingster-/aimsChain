@@ -8,7 +8,7 @@ Path is a collection of nodes, with some additional functions
 
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
-from aimsChain.config import control
+from aimsChain.config import control as config
 class Node(object):
     """
     Class for a single Node
@@ -22,8 +22,7 @@ class Node(object):
                  geometry = None,
                  path = None,
                  dir = None,
-                 fixed = False,
-                 control = None):
+                 fixed = False):
         from aimsChain.atom import Atoms
         self.__param = float(param)
         self.__geometry = geometry
@@ -34,9 +33,6 @@ class Node(object):
         self.__fixed = fixed
         self.__climb = False
         self.__dir_pre = "iterations"
-        self.__control = control
-        if self.__control == None:
-            self.__control = control()
     @property
     def control(self):
         return self.__control
@@ -233,13 +229,20 @@ class Path(object):
     nodes: list of nodes that the path contains
     """
     def __init__(self, 
-                 nodes = []):
+                 nodes = [],
+                 control = None):
         self.__nodes = []
         for node in nodes:
             node.path=self
             self.__nodes.append(node)
         self.__runs = 0
-    
+        self.__control = control
+        if self.__control == None:
+            self.__control = config()
+
+    @property
+    def control(self):
+        return self.__control
     @property
     def nodes(self):
         """get a list of all nodes in the path"""
@@ -398,6 +401,7 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if self.control.global_opt:
+            print "Using global optimizer."
             hess = os.path.join(self.nodes[0].dir_pre, "neb.opt")
             opt = BFGS(hess, alpha = 70)
             opt.initialize()
@@ -405,6 +409,7 @@ class Path(object):
             new_pos = opt.step(positions, forces)
             opt.dump()
         else:
+            print "Using non-global optimizer."
             for i,node in enumerate(self.nodes):
                 hess = "%.4f.opt" % node.param
                 hess = os.path.join(node.dir_pre, hess)
@@ -508,6 +513,7 @@ class Path(object):
         move the climbing nodes using BFGS
         """
         from aimsChain.optimizer.fire import FIRE
+        from aimsChain.optimizer.newbfgs import BFGS
         import os
         moving_nodes = []
         all_forces = []
