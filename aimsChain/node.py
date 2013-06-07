@@ -458,7 +458,7 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if self.control.global_opt:
-            hess = os.path.join(self.nodes[0].dir_pre, "neb.opt")
+            hess = os.path.join(self.nodes[0].dir_pre, "string.opt")
             opt = dampedBFGS(hess)
             opt.initialize()
             opt.load()

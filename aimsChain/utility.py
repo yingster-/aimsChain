@@ -21,6 +21,17 @@ def vproj(v1,v2):
         return v1
     return np.vdot(v1,v2)/mag2 *v2
 
+def vunitproj(v1,v2):
+    """
+    return the projection of v1 onto unit vector of v2
+    """
+    mag2 = vmag(v2)
+    if mag2 == 0:
+        printf("Can't project onto a zero vector\n")
+        return v1
+    vunit2 = vunit(v2)
+    return np.vdot(v1, vunit2) * vunit2
+
 def vunit(v):
     """
     return the unit vector of v

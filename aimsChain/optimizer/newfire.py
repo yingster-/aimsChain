@@ -1,7 +1,6 @@
 import numpy as np
-
 import cPickle as cp
-
+from aimsChain.utility import vunitproj
 
 class FIRE(object):
     def __init__(self, restart="fire.dat",
@@ -29,12 +28,13 @@ class FIRE(object):
         import os.path as path
         if path.isfile(self.restart):
             save = open(self.restart,'r')
-            self.v, self.dt, self.a, self.Nsteps = cp.load(save)
+            self.v, self.dt, self.a, self.Nsteps, self.r0 = cp.load(save)
             save.close()
+
     def dump(self):
         """dump necessary values for future reference"""
         save = open(self.restart, 'w')
-        cp.dump((self.v, self.dt, self.a, self.Nsteps), save)
+        cp.dump((self.v, self.dt, self.a, self.Nsteps, self.r0), save)
         save.close()
        
     def step(self,r,f):
@@ -42,25 +42,32 @@ class FIRE(object):
         f = np.reshape(f,(-1,3))
         if self.v is None:
             self.v = np.zeros((len(f), 3))
+            self.r0 = r
         else:
-            vf = np.vdot(self.v,f)
+            delta_r = r0 - r
+            vf = np.vdot(self.v,delta_r)
             if vf > 0.0:
-                self.v = (1.0 - self.a) * self.v + self.a * f / np.sqrt(
-                    np.vdot(f, f)) * np.sqrt(np.vdot(self.v, self.v))
+                self.v = ((1.0 - self.a) * self.v + 
+                          (self.a * f / 
+                          np.sqrt(np.vdot(f, f)) * np.sqrt(np.vdot(self.v, self.v))))
                 if self.Nsteps > self.Nmin:
                     self.dt = min(self.dt * self.finc, self.dtmax)
                     self.a *= self.fa
                 self.Nsteps += 1
             else:
-                self.v[:] *= 0.0
+                self.v *= 0.0
                 self.a = self.astart
                 self.dt *= self.fdec
                 self.Nsteps = 0
 
         self.v += self.dt * f
         dr = self.dt * self.v
-        maxdr = np.nanmax(np.sum(dr**2,1)**0.5)
-        if maxdr > self.maxmove:
-            dr = self.maxmove * dr / maxdr
-        
-        return r + dr.reshape(r.shape)
+        dr = self.determine_step(dr)
+        return r+dr.reshape(r.shape)
+
+    def determine_step(self, dr):
+        steplengths = (dr**2).sum(1)**0.5
+        maxsteplength = np.max(steplengths)
+        if maxsteplength >= self.maxstep:
+            dr *= self.maxstep/maxsteplength
+        return dr
