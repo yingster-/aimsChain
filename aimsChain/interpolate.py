@@ -49,6 +49,8 @@ def spline_pos(positions, new_t, old_t=None, k = 3, derv = 0):
     positions = np.array(positions)
     if old_t == None:
         old_t = get_t(positions)
+    else:
+        old_t = np.array(old_t)
     new_t = np.array(new_t)
     n_atoms = len(positions[0])
     n_nodes = len(positions)
@@ -63,8 +65,27 @@ def spline_pos(positions, new_t, old_t=None, k = 3, derv = 0):
     new_pos = np.array(new_pos)
     #transform the array back to list of geometries
     new_pos = np.reshape(np.transpose(np.reshape(new_pos,(3*n_atoms,-1))), (-1, n_atoms, 3))
-    result = new_pos
-    return result
+
+    return new_pos
+
+def arb_interp(values, new_t, old_t, k=3, derv = 0):
+    """
+    Cubic interpolation for arbitrary set of numbers
+    Handy when working with things like energy
+    ONLY 1D PLEASE
+    """
+    import numpy as np
+    from scipy import interpolate
+
+    values = np.array(values).flatten()
+    old_t = np.array(old_t)
+    new_t = np.array(new_t)
+    
+    tck = interpolate.splrep(old_t,values,k=k)
+    new_values = interpolate.splev(new_t, tck, der=derv)
+
+    return new_values
+    
 
 """
 !See how to do this when writting optimizer
@@ -77,9 +98,9 @@ def spline_posfor(positions, forces, t, derv = False):
     #The list of positions is parameterized 
     #Will return: (doublet or quadruplet)
     #A list of interpolated positions, matching the specified t
-    #A list of position derivatives at those point. (Turned on with no_derv)
+    #A list of position derivatives at those point. (Turned on with derv)
     #A list of interpolated forces, matching the specified t
-    #A list of forces derivatives at those point. (Turned on with no_derv)
+    #A list of forces derivatives at those point. (Turned on with derv)
     import numpy as np
     from scipy import interpolate
 

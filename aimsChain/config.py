@@ -9,16 +9,30 @@ class control(object):
     generic class for control
     """
     def __init__(self):
+        #initial geometry
         self.ini = "ini.in"
+        #final geometry
         self.fin = "fin.in"
+        #number of images using
         self.nimage = 5
+        #threshold for convergence
         self.thres = 0.1
+        #threshold for climbing image convergence
         self.climb_thres = None
+        #climbing image or not
         self.use_climb = False
+        #command to run aims
         self.run_aims = "mpiexec -ppn 8 -n $NSLOTS ~/bin/aims.081912.scalapack.mpi.x"
+        #using external starting geometry
         self.ext_geo = None
+        #method, string or neb
         self.method = "string"
+        #global optimizer
         self.global_opt = True
+        #climbing by interpolation
+        self.climb_interp = True
+        #spring constant
+        self.spring_k = 10.0
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -57,6 +71,10 @@ class control(object):
                         print "Using string method for MEP finding\n"
                 elif inp[0] == "global_optimizer":
                     self.global_opt = parse_bool(inp[1])
+                elif inp[0] == "interpolated_climb":
+                    self.climb_interp = parse_bool(inp[1])
+                elif inp[0] == "negb_spring_constant":
+                    self.spring_k = float(inp[1])
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:

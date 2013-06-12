@@ -33,9 +33,7 @@ class Node(object):
         self.__fixed = fixed
         self.__climb = False
         self.__dir_pre = "iterations"
-    @property
-    def control(self):
-        return self.__control
+
     @property
     def param(self):
         return self.__param
@@ -121,7 +119,10 @@ class Node(object):
 
     @property
     def spring_forces(self):
-        k=10.0
+        if self.path == None:
+            k = 10.0
+        else:
+            k = self.path.config.spring_k
         if self.fixed:
             return np.zeros(np.shape(self.positions))
         forces = self.normal_forces
@@ -220,7 +221,7 @@ class Node(object):
         even fixed nodes will get updates
         """
         if (not self.fixed) or write_fixed:
-            self.dir = "aims-chain-node-%.4f-%04d" % (self.param, self.path.runs)
+            self.dir = "aims-chain-node-%.5f-%06d" % (self.param, self.path.runs)
                 
 class Path(object):
     """
@@ -283,7 +284,7 @@ class Path(object):
         """
         import os
         from aimsChain.aimsio import read_aims_output, read_aims
-        for node in self.__nodes:
+        for node in self.nodes:
             dir = os.path.join(node.dir_pre, node.dir)
             geo_path = os.path.join(dir, "geometry.in")
             output_path = os.path.join(dir, node.dir+".out")
@@ -304,7 +305,7 @@ class Path(object):
         import shutil
         from aimsChain.aimsio import write_aims
         path = []
-        for node in self.__nodes:
+        for node in self.nodes:
             node.update_dir()
             dir=node.write_node()
             if dir != None:
@@ -349,7 +350,7 @@ class Path(object):
         forces = []
         new_t = []
         diff_pos = None
-        for node in self.__nodes:
+        for node in self.nodes:
             #list all the new params
             new_t.append(node.param)
             #add pos and force to the list
@@ -380,6 +381,67 @@ class Path(object):
             return diff_pos/t_step
         else:
             return 1.0
+
+    def move_nodes2(self):
+        """
+        move the nodes according to NEB rules
+        """
+        import os
+        from aimsChain.optimizer.newfire import newFIRE
+        from aimsChain.optimizer.euler import EULER
+        from aimsChain.interpolate import spline_pos
+        positions = []
+        forces = []
+        new_t = []
+        diff_pos = None
+        new_pos = []
+        t_step = []
+        for node in self.nodes:
+            new_t.append(node.param)
+            if (np.sum(node.positions) != 0):
+                positions.append(node.positions)
+                forces.append(node.forces)
+      
+        forces = np.array(forces)
+        positions = np.array(positions)
+        """
+        hess = os.path.join(self.nodes[0].dir_pre, "string.opt")
+        opt = newFIRE(hess)
+        opt.initialize()
+        opt.load()
+        new_pos = opt.step(positions, forces)
+        opt.dump()
+        """
+        for i,node in enumerate(self.nodes):
+            hess = "%.4f.opt" % node.param
+            hess = os.path.join(node.dir_pre, hess)
+            opt = newFIRE(hess)
+            opt.initialize()
+            opt.load()
+            next_pos = opt.step(positions[i], forces[i])
+            new_pos.append(next_pos)
+        #    t_step.append(next_t)
+            opt.dump()
+        
+#        t_step = np.array(t_step)
+        new_pos = spline_pos(new_pos, new_t)
+        
+        if positions.shape == new_pos.shape:
+            diff_pos = new_pos - positions
+            diff_pos = np.reshape(diff_pos, (-1,3))
+            diff_pos = np.sum(diff_pos**2,1)**0.5
+
+
+        for i,pos in enumerate(new_pos):
+            self.nodes[i].positions = pos
+            
+        if diff_pos != None:
+            np.set_printoptions(suppress = True)
+            return 1.0
+            return np.nanmax(diff_pos)
+        else:
+            return 1.0
+
 
 
     def move_neb(self):
@@ -444,7 +506,7 @@ class Path(object):
         forces = []
         new_t = []
         new_pos = []
-        for node in self.__nodes:
+        for node in self.nodes:
             #list all the new params
             new_t.append(node.param)
             #add pos and force to the list
@@ -484,29 +546,50 @@ class Path(object):
         return np.nanmax(forces)
             
 
-    def find_climb(self, mode=1):
-        """turn on the climb flags in the list of nodes
-        mode=1:only global maximum
-        mode=2:only global minimum
-        mode=3:global max&min
-        mode=4:all local maximum
-        mode=5:all global minimum
-        mode=6:local max&min
-
-        only mode =1 for now, testing purpose
+    def find_climb(self):
         """
+        turn on the climb flags in the list of nodes
+        """
+        import copy
+        from aimsChain.interpolate import arb_interp, spline_pos
         energy = []
         climb_nodes = []
+        positions = []
+        old_t = []
         for node in self.nodes:
             energy.append(node.ener)
+            old_t.append(node.param)
+            positions.append(node.positions)
             node.fixed = True
-        if mode == 1:
-            ind = energy.index(np.nanmax(energy[1:-1]))
-            climb_nodes.append(self.nodes[ind])
 
-        for node in climb_nodes:
-            node.fixed = False
-            node.climb = True
+        if self.control.climb_interp == False:
+            ind = energy.index(np.nanmax(energy[1:-1]))
+            self.nodes[ind].fixed = False
+            self.nodes[ind].climb = True
+        else:
+            new_t = np.linspace(0,1,1001)
+            energy_interp = arb_interp(energy, new_t, old_t)
+            ind = np.where(energy_interp == np.nanmax(energy_interp[1:-1]))[0][0]
+            change_t = np.absolute(old_t - new_t[ind])
+            mint_ind = np.where(change_t == np.nanmin(change_t))[0][0]
+            if np.nanmin(change_t) < 0.001:
+                self.nodes[mint_ind].fixed = False
+                self.nodes[mint_ind].climb = True
+            else:
+                new_t = np.array(new_t[ind])
+                new_node = Node(param = new_t,
+                                geometry = copy.deepcopy(self.nodes[mint_ind].geometry),
+                                path = self)
+                new_pos = spline_pos(positions, new_t, old_t = old_t)
+                new_node.positions = new_pos[0]
+                new_node.update_dir
+                new_node.climb = True
+                new_node.fixed = False
+                self.nodes = new_node
+                
+        
+            
+
 
     def move_climb(self):
         """
@@ -514,10 +597,11 @@ class Path(object):
         """
         from aimsChain.optimizer.fire import FIRE
         from aimsChain.optimizer.newbfgs import BFGS
+        from aimsChain.optimizer.dampedbfgs import BFGS
         import os
         moving_nodes = []
         all_forces = []
-        for node in self.__nodes:
+        for node in self.nodes:
             if node.climb:
                 moving_nodes.append(node)
         for node in moving_nodes:
@@ -526,7 +610,7 @@ class Path(object):
             climb_force = node.climb_forces
             all_forces.append(climb_force)
 
-            opt = FIRE(hess)
+            opt = BFGS(hess)
             opt.initialize()
             opt.load()
             node.positions = opt.step(node.positions,
