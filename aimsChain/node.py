@@ -55,9 +55,9 @@ class Node(object):
         self.__climb = bool(climb)
     
     @property
-    def config(self):
+    def control(self):
         if self.path != None:
-            return self.path.config
+            return self.path.control
         else:
             return config()
 
@@ -130,7 +130,7 @@ class Node(object):
         if self.path == None:
             k = 10.0
         else:
-            k = self.config.spring_k
+            k = self.control.spring_k
         if self.fixed:
             return np.zeros(np.shape(self.positions))
         forces = self.normal_forces
@@ -226,12 +226,15 @@ class Node(object):
                 os.makedirs(dir)
             write_aims(os.path.join(dir, "geometry.in"), self.geometry)
             shutil.copy("control.in", dir)
-            if (self.path and self.config.aims_restart
+            if (self.path and self.control.aims_restart
                 and self.previous_dir):
                 if self.previous_dir != self.dir:
-                    restart_file = self.config.aims_restart
-                    previous_restart = os.path.join(self.dir_pre,self.previoud_dir, restart_file) 
-                    shutil.copy(previous_restart, dir)
+                    restart_file = self.control.aims_restart
+                    previous_restart = os.path.join(self.dir_pre,self.previous_dir, restart_file) 
+                    try:
+                        shutil.copy(previous_restart, dir)
+                    except:
+                        pass
             return dir
         else:
             return None

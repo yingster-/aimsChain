@@ -106,6 +106,7 @@ forcelog = open("forces.log", 'w')
 forcelog.write("#Residual Forces in the system:\n")
 forcelog.flush()
 
+force = 10.0
 while force > control.thres:
 #    forcelog = open("forces.log", 'a')
     run_aims(path_to_run)
