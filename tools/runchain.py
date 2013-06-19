@@ -3,6 +3,7 @@
 import subprocess
 import os
 import distutils.dir_util as dir_util
+import numpy as np
 
 from aimsChain.node import Path
 from aimsChain.node import Node
@@ -26,7 +27,7 @@ def run_aims(paths):
 
 control = control()
 path = Path(control=control)
-force = 1.0
+
 #set the initial and final image
 ininode = Node(param = 0.0, 
                geometry = read_aims(control.ini), 
@@ -34,6 +35,31 @@ ininode = Node(param = 0.0,
 finnode = Node(param = 1.0,
                geometry = read_aims(control.fin),
                fixed = True)
+
+#does periodic transformation between initial and final node
+#minimize distance between initial and final image atom-wise
+#maybe this should be moved to another file...runchain is getting too messy
+#leave it like this for now
+if control.periodic_interp and finnode.geometry.lattice != None:
+    lattice = finnode.geometry.lattice
+    initial_pos = ininode.positions
+    curr_pos = finnode.positions
+    fin_pos = []
+    for i,atom_pos in enumerate(curr_pos):
+        dis = 1000000
+        pos = None
+        for a in [-1,0,1]:
+            for b in [-1,0,1]:
+                for c in [-1,0,1]:
+                    pos_tmp = (atom_pos +
+                               a*lattice[0] + b*lattice[1] + c*lattice[2])
+                    dis_tmp = np.sum(np.array(pos_tmp - initial_pos[i])**2)**0.5
+                    if dis_tmp <= dis:
+                        pos = pos_tmp
+        fin_pos.append(pos)
+
+    finnode.positions = fin_pos                    
+
 #parse the externl geometry and such
 try:
     nodes = [ininode]
@@ -79,6 +105,7 @@ path.write_path()
 forcelog = open("forces.log", 'w')
 forcelog.write("#Residual Forces in the system:\n")
 forcelog.flush()
+
 while force > control.thres:
 #    forcelog = open("forces.log", 'a')
     run_aims(path_to_run)
@@ -98,13 +125,14 @@ forcelog.close()
 
 
 if control.use_climb:
-    force = 1.0
+    force = 10.0
     path.find_climb()
     path.add_runs()
     path_to_run = path.write_node()
 
     forcelog = open("climbing_forces.log", 'w')
     forcelog.write("#Residual Forces in the Climbing image:\n")
+    forcelog.flush()
 
     while force > control.climb_thres:
         run_aims(path_to_run)

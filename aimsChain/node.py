@@ -102,8 +102,8 @@ class Node(object):
     def climb_forces(self):
         if not self.climb:
             return np.zeros(np.shape(self.geometry.forces))
-        elif self.ener < self.prev.ener:
-            return self.geometry.forces
+#        elif self.ener < self.prev.ener:
+#            return self.geometry.forces
         else:
             forces = self.geometry.forces
             tangent = self.get_tangent()
@@ -585,6 +585,7 @@ class Path(object):
                 new_node.update_dir
                 new_node.climb = True
                 new_node.fixed = False
+                new_node.ener = np.nanmax(energy_interp[1:-1])
                 self.nodes = new_node
                 
         
@@ -597,7 +598,7 @@ class Path(object):
         """
         from aimsChain.optimizer.fire import FIRE
         from aimsChain.optimizer.newbfgs import BFGS
-        from aimsChain.optimizer.dampedbfgs import BFGS
+        from aimsChain.optimizer.dampedbfgs import dampedBFGS
         import os
         moving_nodes = []
         all_forces = []
@@ -610,7 +611,7 @@ class Path(object):
             climb_force = node.climb_forces
             all_forces.append(climb_force)
 
-            opt = BFGS(hess)
+            opt = dampedBFGS(hess)
             opt.initialize()
             opt.load()
             node.positions = opt.step(node.positions,

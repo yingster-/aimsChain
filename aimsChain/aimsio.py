@@ -82,6 +82,52 @@ def write_aims(filename, atoms):
             geo.write(line + '\n')
     geo.close()
 
+def write_mapped_aims(filename, atoms):
+    """
+    Wrtie atoms into a geometry file with "filename"
+    """
+    import numpy as np
+    
+    if atoms.lattice == None:
+        write_aims(filename, atoms)
+        return
+    else:
+        lattice = atoms.lattice
+
+    geo = open(filename, 'w')
+    geo.write('#=======================================#\n')
+    geo.write('# '+filename+'\n')
+    geo.write('# mapped to central unit cell \n')
+    geo.write('#=======================================#\n')
+    for vector in atoms.lattice:
+        geo.write('lattice_vector ')
+        for i in range(3):
+            geo.write('%16.16f ' % vector[i])
+        geo.write('\n')
+    
+    for atom in atoms.atoms:
+        geo.write('atom ')
+        positions = np.linalg.solve(lattice, atom.positions)
+        positions %= 1.0
+        positions %= 1.0
+        positions = np.dot(positions, lattice)
+        for coord in positions:
+            geo.write('%16.16f ' % coord)
+        geo.write(atom.symbol + '\n')
+        constraint = ( atom.constraint == [0,0,0] )
+        if constraint[0] and constraint[1] and constraint[2]:
+            geo.write('constrain_relaxation .true.\n')
+        elif constraint[0]:
+            geo.write('constrain_relaxation x\n')
+        elif constraint[1]:
+            geo.write('constrain_relaxation y\n')
+        elif constraint[2]:
+            geo.write('constrain_relaxation z\n')
+        for line in atom.extra:
+            geo.write(line + '\n')
+    geo.close()
+
+
 
 def read_aims_output(filename):
     """

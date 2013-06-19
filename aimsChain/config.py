@@ -33,6 +33,8 @@ class control(object):
         self.climb_interp = True
         #spring constant
         self.spring_k = 10.0
+        #periodic interpolation
+        self.periodic_interp = False
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -73,8 +75,10 @@ class control(object):
                     self.global_opt = parse_bool(inp[1])
                 elif inp[0] == "interpolated_climb":
                     self.climb_interp = parse_bool(inp[1])
-                elif inp[0] == "negb_spring_constant":
+                elif inp[0] == "neb_spring_constant":
                     self.spring_k = float(inp[1])
+                elif inp[0] == "periodic_interpolation":
+                    self.periodic_interp = parse_bool(inp[1])
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:
