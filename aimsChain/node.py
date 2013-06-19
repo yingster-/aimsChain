@@ -33,6 +33,7 @@ class Node(object):
         self.__fixed = fixed
         self.__climb = False
         self.__dir_pre = "iterations"
+        self.__previous_dir = None
 
     @property
     def param(self):
@@ -52,6 +53,13 @@ class Node(object):
     @climb.setter
     def climb(self, climb):
         self.__climb = bool(climb)
+    
+    @property
+    def config(self):
+        if self.path != None:
+            return self.path.config
+        else:
+            return config()
 
     @property
     def path(self):
@@ -122,7 +130,7 @@ class Node(object):
         if self.path == None:
             k = 10.0
         else:
-            k = self.path.config.spring_k
+            k = self.config.spring_k
         if self.fixed:
             return np.zeros(np.shape(self.positions))
         forces = self.normal_forces
@@ -164,6 +172,14 @@ class Node(object):
             return None
         else:
             return self.path.nodes[i+1]
+
+    @property
+    def previous_dir(self):
+        """store the previous dir for this node"""
+        return self.__previous_dir
+    @previous_dir.setter
+    def previous_dir(self, value):
+        self.__previous_dir = value
 
     def get_tangent(self, unit=True):
         prev = self.prev
@@ -209,7 +225,13 @@ class Node(object):
             if not os.path.isdir(dir):
                 os.makedirs(dir)
             write_aims(os.path.join(dir, "geometry.in"), self.geometry)
-            shutil.copyfile("control.in", os.path.join(dir, "control.in"))
+            shutil.copy("control.in", dir)
+            if (self.path and self.config.aims_restart
+                and self.previous_dir):
+                if self.previous_dir != self.dir:
+                    restart_file = self.config.aims_restart
+                    previous_restart = os.path.join(self.dir_pre,self.previoud_dir, restart_file) 
+                    shutil.copy(previous_restart, dir)
             return dir
         else:
             return None
@@ -221,6 +243,7 @@ class Node(object):
         even fixed nodes will get updates
         """
         if (not self.fixed) or write_fixed:
+            self.previous_dir = self.dir
             self.dir = "aims-chain-node-%.5f-%06d" % (self.param, self.path.runs)
                 
 class Path(object):

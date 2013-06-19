@@ -35,6 +35,8 @@ class control(object):
         self.spring_k = 10.0
         #periodic interpolation
         self.periodic_interp = False
+        #restart file
+        self.aims_restart = None
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -79,6 +81,8 @@ class control(object):
                     self.spring_k = float(inp[1])
                 elif inp[0] == "periodic_interpolation":
                     self.periodic_interp = parse_bool(inp[1])
+                elif inp[0] == "aims restart":
+                    self.aims_restart = str(inp[1])
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:
