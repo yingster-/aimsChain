@@ -181,7 +181,7 @@ class Node(object):
     def previous_dir(self, value):
         self.__previous_dir = value
 
-    def get_tangent(self, unit=True):
+    def get_tangent(self, for_climb=False, unit=True):
         prev = self.prev
         next = self.next
         tangent = None
@@ -193,9 +193,9 @@ class Node(object):
             tan1 = next.positions - self.positions
             tan2 = self.positions - prev.positions
 
-            if next.ener >= self.ener and self.ener >= prev.ener:
+            if next.ener >= self.ener and self.ener >= prev.ener and not for_climb:
                 tangent = tan1
-            elif next.ener < self.ener and self.ener < prev.ener:
+            elif next.ener < self.ener and self.ener < prev.ener and not for_climb:
                 tangent = tan2
             else:
                 max = np.nanmax((abs(next.ener-self.ener), abs(self.ener-prev.ener)))
@@ -218,7 +218,7 @@ class Node(object):
 
         TODO: also get restarts from previous run
         """
-        import os, shutil
+        import glob, os, shutil
         from aimsChain.aimsio import write_aims
         dir = os.path.join(self.dir_pre, self.dir)
         if (not self.fixed) or write_fixed:
@@ -229,12 +229,11 @@ class Node(object):
             if (self.path and self.control.aims_restart
                 and self.previous_dir):
                 if self.previous_dir != self.dir:
-                    restart_file = self.control.aims_restart
-                    previous_restart = os.path.join(self.dir_pre,self.previous_dir, restart_file) 
-                    try:
-                        shutil.copy(previous_restart, dir)
-                    except:
-                        pass
+                    restart_file = self.control.aims_restart + "*"
+                    files = glob.glob(os.path.join(self.dir_pre, self.previous_dir, restart_file))
+                    for file in files:
+                        if os.path.isfile(file):
+                            shutil.copy(file, dir)
             return dir
         else:
             return None
@@ -598,7 +597,12 @@ class Path(object):
             ind = np.where(energy_interp == np.nanmax(energy_interp[1:-1]))[0][0]
             change_t = np.absolute(old_t - new_t[ind])
             mint_ind = np.where(change_t == np.nanmin(change_t))[0][0]
-            if np.nanmin(change_t) < 0.001:
+            if(change_t[mint_ind] <= 0):
+                t_thres = old_t[mint_ind+1] - old_t[mint_ind]
+            else:
+                t_thres = old_t[mint_ind] - old_t[mint_ind-1]
+            t_thres = t_thres/4.0
+            if np.nanmin(change_t) < t_thres:
                 self.nodes[mint_ind].fixed = False
                 self.nodes[mint_ind].climb = True
             else:

@@ -30,11 +30,9 @@ path = Path(control=control)
 
 #set the initial and final image
 ininode = Node(param = 0.0, 
-               geometry = read_aims(control.ini), 
-               fixed = True)
+               geometry = read_aims(control.ini))
 finnode = Node(param = 1.0,
-               geometry = read_aims(control.fin),
-               fixed = True)
+               geometry = read_aims(control.fin))
 
 #does periodic transformation between initial and final node
 #minimize distance between initial and final image atom-wise
@@ -56,9 +54,15 @@ if control.periodic_interp and finnode.geometry.lattice != None:
                     dis_tmp = np.sum(np.array(pos_tmp - initial_pos[i])**2)**0.5
                     if dis_tmp <= dis:
                         pos = pos_tmp
+                        dis = dis_tmp
         fin_pos.append(pos)
 
     finnode.positions = fin_pos                    
+
+
+#fix the initial and final node    
+ininode.fixed = True
+finnode.fixed = True
 
 #parse the externl geometry and such
 try:
@@ -90,7 +94,7 @@ try:
 except:
     print '!Error interprating the external geometries\n'
     print '!Using standard interpolation method for initial geometries\n'
-    
+
 
 if len(nodes) <= 2:
     path.nodes = [ininode, finnode]
