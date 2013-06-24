@@ -8,7 +8,7 @@ import numpy as np
 from aimsChain.node import Path
 from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
-from aimsChain.config import control
+from aimsChain.config import Control
 from aimsChain.interpolate import get_t
 
 def run_aims(paths):
@@ -25,7 +25,7 @@ def run_aims(paths):
     paths = []
 
 
-control = control()
+control = Control()
 path = Path(control=control)
 
 #set the initial and final image

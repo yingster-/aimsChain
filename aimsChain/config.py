@@ -4,7 +4,7 @@ control name is "chain.in"
 """
 import os 
 import string
-class control(object):
+class Control(object):
     """
     generic class for control
     """
@@ -15,12 +15,20 @@ class control(object):
         self.fin = "fin.in"
         #number of images using
         self.nimage = 5
+        #periodic interpolation
+        self.periodic_interp = False
         #threshold for convergence
         self.thres = 0.1
         #threshold for climbing image convergence
         self.climb_thres = None
         #climbing image or not
         self.use_climb = False
+        #climbing by interpolation
+        self.climb_interp = True
+        #climbing mode
+        #1 for single node climb
+        #2 for 3 node climb
+        self.climb_mode = 1
         #command to run aims
         self.run_aims = "mpiexec -ppn 8 -n $NSLOTS ~/bin/aims.081912.scalapack.mpi.x"
         #using external starting geometry
@@ -29,12 +37,8 @@ class control(object):
         self.method = "string"
         #global optimizer
         self.global_opt = True
-        #climbing by interpolation
-        self.climb_interp = True
         #spring constant
         self.spring_k = 10.0
-        #periodic interpolation
-        self.periodic_interp = False
         #restart file
         self.aims_restart = None
         self.read()
@@ -62,6 +66,8 @@ class control(object):
                     self.climb_thres = float(inp[1])
                 elif inp[0] == "use_climb":
                     self.use_climb = parse_bool(inp[1])
+                elif inp[0] == "climb_mode":
+                    self.climb_mode = int(inp[1])
                 elif inp[0] == "run_aims":
                     self.run_aims = string.join(inp[1:])
                 elif inp[0] == "external_geometry":
