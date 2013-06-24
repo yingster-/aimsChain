@@ -113,7 +113,7 @@ class Node(object):
 #        elif self.ener < self.prev.ener:
 #            return self.geometry.forces
         else:
-            forces = self.geometry.forces
+            forces = self.forces
             tangent = self.get_tangent()
             return forces - 2*vproj(forces,tangent)
     @property
