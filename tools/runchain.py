@@ -87,10 +87,13 @@ try:
         for node in nodes:
             geos.append(node.positions)
         t = get_t(geos)
-        print t
         for i in range(len(t)):
             nodes[i].param = t[i]
         path.nodes = nodes
+
+        if control.resample and control.nimage != (len(nodes)-2):
+            path.interpolate(control.nimage)
+
 except:
     print '!Error interprating the external geometries\n'
     print '!Using standard interpolation method for initial geometries\n'

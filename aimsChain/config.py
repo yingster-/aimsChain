@@ -41,6 +41,8 @@ class Control(object):
         self.spring_k = 10.0
         #restart file
         self.aims_restart = None
+        #resample external geometry
+        self.resample = False
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -89,6 +91,8 @@ class Control(object):
                     self.periodic_interp = parse_bool(inp[1])
                 elif inp[0] == "aims_restart":
                     self.aims_restart = str(inp[1])
+                elif inp[0] == "resample":
+                    self.resample = parese_bool(inp[1])
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:
