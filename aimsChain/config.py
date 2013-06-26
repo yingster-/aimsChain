@@ -92,7 +92,7 @@ class Control(object):
                 elif inp[0] == "aims_restart":
                     self.aims_restart = str(inp[1])
                 elif inp[0] == "resample":
-                    self.resample = parese_bool(inp[1])
+                    self.resample = parse_bool(inp[1])
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:
