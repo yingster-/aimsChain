@@ -114,10 +114,6 @@ class Node(object):
             forces = self.forces
             tangent = self.get_tangent()
             return forces - 2*vproj(forces,tangent)
-        elif (self.ener > self.prev.ener and self.ener > self.next.ener):
-            forces = self.forces
-            tangent = self.get_tangent()
-            return forces - 2*vproj(forces,tangent)
         else:
             if self.control.method == "neb":
                 return self.spring_forces
@@ -636,10 +632,6 @@ class Path(object):
         if self.control.climb_mode == 2:
             target_node.prev.fixed = False
             target_node.next.fixed = False
-        elif self.control.climb_mode == 3:
-            target_node.climb = False
-            for node in self.nodes[1:-1]:
-                node.fixed = False
             
 
 
