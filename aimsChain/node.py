@@ -632,6 +632,9 @@ class Path(object):
         if self.control.climb_mode == 2:
             target_node.prev.fixed = False
             target_node.next.fixed = False
+        elif self.control.climb_mode == 3:
+            for node in self.nodes[1:-1]:
+                node.fixed = False
             
 
 
@@ -665,13 +668,19 @@ class Path(object):
                                       climb_force)
             opt.dump()
         else:
-            moving_nodes.insert(0,moving_nodes[0].prev)
-            moving_nodes.append(moving_nodes[-1].next)
-            new_t = [0,0.25,0.5,0.75,1]
+            if moving_nodes[0].prev:
+                moving_nodes.insert(0,moving_nodes[0].prev)
+            if moving_nodes[-1].next:
+                moving_nodes.append(moving_nodes[-1].next)
+            new_t = []
             new_pos = []
-            for node in moving_nodes:
+            climb_ind = None
+            for i,node in enumerate(moving_nodes):
                 forces.append(node.climb_forces)
                 positions.append(node.positions)
+                new_t.append(node.param)
+                if node.climb:
+                    climb_ind = i
             forces = np.array(forces)
             positions = np.array(positions)
             if self.control.global_opt:
@@ -692,8 +701,12 @@ class Path(object):
                                             forces[i]))
                     opt.dump()
             
-            old_t = get_t(new_pos[0:3])/2.0
-            old_t2 = get_t(new_pos[2:5])/2.0+0.5
+            old_t = (get_t(new_pos[0:climb_ind]) 
+                     / (moving_nodes[climb_ind].param-moving_nodes[0].param) 
+                     + moving_nodes[0].param)
+            old_t2 = (get_t(new_pos[climb_ind-1:])
+                      / (moving_nodes[-1].param - moving_nodes[climb_ind].param) 
+                      + moving_nodes[climb_ind].param)
             old_t = np.append(old_t, old_t2[1:])
             new_pos = spline_pos(new_pos, new_t, old_t = old_t)
             for i, position in enumerate(new_pos):
