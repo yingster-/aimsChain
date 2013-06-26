@@ -721,25 +721,43 @@ class Path(object):
 
     def interpolate(self, n):
         """
-        interpolate the current path
-        will only work if there are currently two nodes in the path
+        interpolate/resample the current path
         """
-        from aimsChain.interpolate import linear_interp
+        from aimsChain.interpolate import linear_interp, spline_pos
         import copy
-        if self.n_nodes() != 2:
-            return False
-        pos1 = self.__nodes[0].positions
-        pos2 = self.__nodes[1].positions
-        positions, new_t = linear_interp(pos1,pos2,n)
-        positions = positions[1:-1]
-        new_t = new_t[1:-1]
-        for i,t in enumerate(new_t):
-            new_node = Node(param = t, 
-                            geometry = copy.deepcopy(self.__nodes[0].geometry), 
-                            path = self)
-            new_node.positions = positions[i]
-            new_node.update_dir()
-            self.nodes = new_node
+        if self.n_nodes() == 2:
+            pos1 = self.__nodes[0].positions
+            pos2 = self.__nodes[1].positions
+            positions, new_t = linear_interp(pos1,pos2,n)
+            positions = positions[1:-1]
+            new_t = new_t[1:-1]
+            for i,t in enumerate(new_t):
+                new_node = Node(param = t, 
+                                geometry = copy.deepcopy(self.nodes[0].geometry), 
+                                path = self)
+                new_node.positions = positions[i]
+                new_node.update_dir()
+                self.nodes = new_node
+        else:
+            positions = []
+            old_t = []
+            new_t = np.linspace(0,1,n+2)
+            for node in self.nodes:
+                old_t.append(node.param)
+                positions.append(node.positions)
+            positions = np.array(positions)
+            positions = spline_pos(positions, new_t, old_t)[1:-1]
+            new_t = new_t[1:-1]
+            self.nodes = [self.nodes[0], self.nodes[-1]]
+            for i,t in enumerate(new_t):
+                new_node = Node(param = t,
+                                geometry = copy.deepcopy(self.nodes[0].geometry),
+                                path=self)
+                new_node.positions = positions[i]
+                new_node.update_dir()
+                self.nodes = new_node
+            
+            
     
     def write_path(self, file="path.dat"):
         """
