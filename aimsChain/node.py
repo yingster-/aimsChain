@@ -115,7 +115,7 @@ class Node(object):
             tangent = self.get_tangent()
             return forces - 2*vproj(forces,tangent)
         else:
-            if self.Control.method == "neb":
+            if self.control.method == "neb":
                 return self.spring_forces
             else:
                 return self.normal_forces
@@ -665,12 +665,12 @@ class Path(object):
                                       climb_force)
             opt.dump()
         else:
-            moving_nodes.insert(moving_nodes[0].prev)
+            moving_nodes.insert(0,moving_nodes[0].prev)
             moving_nodes.append(moving_nodes[-1].next)
             new_t = [0,0.25,0.5,0.75,1]
             new_pos = []
             for node in moving_nodes:
-                forces.append(node.climbing_forces)
+                forces.append(node.climb_forces)
                 positions.append(node.positions)
             forces = np.array(forces)
             positions = np.array(positions)
@@ -693,16 +693,16 @@ class Path(object):
                     opt.dump()
             
             old_t = get_t(new_pos[0:3])/2.0
-            old_t2 = get_t(new_pos[2:5]])/2.0+0.5
-            old_t.extend(old_t2[1:])
-            new_pos = spline_pos(new_pos, new_t, old_t)
+            old_t2 = get_t(new_pos[2:5])/2.0+0.5
+            old_t = np.append(old_t, old_t2[1:])
+            new_pos = spline_pos(new_pos, new_t, old_t = old_t)
             for i, position in enumerate(new_pos):
                 moving_nodes[i].positions = position
         
         forces = np.reshape(forces, (-1,3))
         forces = np.sum(forces**2,1)**0.5
         
-        return np.nanmax(all_forces)
+        return np.nanmax(forces)
     def n_nodes(self):
         """
         return the current number of nodes in the path
