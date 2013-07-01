@@ -43,6 +43,8 @@ class Control(object):
         self.aims_restart = None
         #resample external geometry
         self.resample = False
+        #restart or not
+        self.restart = False
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -77,10 +79,8 @@ class Control(object):
                 elif inp[0] == "method":
                     if inp[1] in ['NEB', 'neb', 'Neb']:
                         self.method = "neb"
-                        print "Using NEB method for MEP finding\n"
                     else:
                         self.method = 'string'
-                        print "Using string method for MEP finding\n"
                 elif inp[0] == "global_optimizer":
                     self.global_opt = parse_bool(inp[1])
                 elif inp[0] == "interpolated_climb":
@@ -93,6 +93,8 @@ class Control(object):
                     self.aims_restart = str(inp[1])
                 elif inp[0] == "resample":
                     self.resample = parse_bool(inp[1])
+                elif inp[0] == "restart":
+                    self.restart = parse_bool(inp[1])
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:

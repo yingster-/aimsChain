@@ -27,7 +27,10 @@ class FIRE(object):
         import os.path as path
         if path.isfile(self.restart):
             save = open(self.restart,'r')
-            self.v, self.dt, self.a, self.Nsteps = cp.load(save)
+            try:
+                self.v, self.dt, self.a, self.Nsteps = cp.load(save)
+            except:
+                self.initialize()
             save.close()
     def dump(self):
         """dump necessary values for future reference"""

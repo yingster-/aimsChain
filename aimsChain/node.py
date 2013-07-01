@@ -112,7 +112,7 @@ class Node(object):
             return np.zeros(np.shape(self.forces))
         elif self.climb:
             forces = self.forces
-            tangent = self.get_tangent()
+            tangent = self.get_tangent(for_climb=True)
             return forces - 2*vproj(forces,tangent)
         else:
             if self.control.method == "neb":
@@ -188,6 +188,7 @@ class Node(object):
     @previous_dir.setter
     def previous_dir(self, value):
         self.__previous_dir = value
+
 
     def get_tangent(self, for_climb=False, unit=True):
         prev = self.prev
@@ -305,6 +306,13 @@ class Path(object):
     @runs.setter
     def runs(self, value):
         self.__runs = int(value)
+    @property
+    def periodic(self):
+        return self.nodes[0].geometry.lattice != None
+    @property
+    def lattice_vector(self):
+        return self.nodes[0].geometry.lattice
+
     def add_runs(self):
         self.__runs += 1
     def load_nodes(self):
@@ -496,15 +504,13 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if self.control.global_opt:
-            print "Using global optimizer."
-            hess = os.path.join(self.nodes[0].dir_pre, "neb.opt")
+            hess = os.path.join(self.nodes[0].dir_pre, "path.opt")
             opt = BFGS(hess, alpha = 70)
             opt.initialize()
             opt.load()
             new_pos = opt.step(positions, forces)
             opt.dump()
         else:
-            print "Using non-global optimizer."
             for i,node in enumerate(self.nodes):
                 hess = "%.4f.opt" % node.param
                 hess = os.path.join(node.dir_pre, hess)
@@ -552,7 +558,7 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if self.control.global_opt:
-            hess = os.path.join(self.nodes[0].dir_pre, "string.opt")
+            hess = os.path.join(self.nodes[0].dir_pre, "path.opt")
             opt = dampedBFGS(hess)
             opt.initialize()
             opt.load()
@@ -589,14 +595,17 @@ class Path(object):
         positions = []
         old_t = []
         target_node = None
+        climb_mode = self.control.climb_mode
 
         for node in self.nodes:
             energy.append(node.ener)
             old_t.append(node.param)
             positions.append(node.positions)
-            node.fixed = True
+            node.climb = False
+            if climb_mode != 3:
+                node.fixed = True
 
-        if self.control.climb_interp == False:
+        if (self.control.climb_interp == False) or (climb_mode == 3):
             ind = energy.index(np.nanmax(energy[1:-1]))
             self.nodes[ind].fixed = False
             self.nodes[ind].climb = True
@@ -629,7 +638,7 @@ class Path(object):
                 new_node.ener = np.nanmax(energy_interp[1:-1])
                 target_node = new_node
                 self.nodes = new_node
-        if self.control.climb_mode == 2:
+        if climb_mode == 2:
             target_node.prev.fixed = False
             target_node.next.fixed = False
             
@@ -647,11 +656,14 @@ class Path(object):
         moving_nodes = []
         forces = []
         positions = []
+        climb_mode = self.control.climb_mode
+        if climb_mode == 3:
+            self.find_climb()
         for node in self.nodes:
             if not node.fixed:
                 moving_nodes.append(node)
 
-        if self.control.climb_mode == 1:
+        if climb_mode == 1:
             node = moving_nodes[0]
             hess="%.4f.climb.opt" % node.param
             hess = os.path.join(node.dir_pre, hess)

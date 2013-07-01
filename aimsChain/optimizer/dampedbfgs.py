@@ -41,7 +41,10 @@ class dampedBFGS(object):
         import os.path as path
         if path.isfile(self.restart):
             hess = open(self.restart, 'r')
-            self.H, self.r0, self.f0 = cp.load(hess)
+            try:
+                self.H, self.r0, self.f0 = cp.load(hess)
+            except:
+                self.initialize()
             hess.close()
 
     def dump(self):
@@ -114,7 +117,6 @@ class dampedBFGS(object):
         
         #print sk
         #print yk
-        print "rhok  " + str(rhok)
         theta = 1
         thres = 0.2*np.dot(sk,self.H).dot(sk)
         

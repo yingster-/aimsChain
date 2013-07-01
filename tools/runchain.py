@@ -3,6 +3,7 @@
 import subprocess
 import os
 import distutils.dir_util as dir_util
+import shutil
 import numpy as np
 import cPickle as cp
 
@@ -11,12 +12,14 @@ from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
 from aimsChain.config import Control
 from aimsChain.interpolate import get_t
+from aimsChain.aimsio import write_mapped_aims, write_xyz
 
 def run_aims(paths):
     global control
     while len(paths) > 0:
         path = paths[0]
-        save_restart(paths)
+        if control.restart:
+            save_restart(paths)
         #remove the ending slash if it exist
         if path[-1] == "/":
             path = path[:-1]
@@ -26,7 +29,8 @@ def run_aims(paths):
         command = 'cd ' + path + ';' + control.run_aims + ' > ' + filename
         subprocess.call(command, shell=True)
         paths.remove(path)
-        save_restart(paths)
+        if control.restart:
+            save_restart(paths)
         
     paths = []
 
@@ -108,44 +112,76 @@ def initial_interpolation():
 
     #if there were no external geometry, linear interpolate the image
     if len(nodes) <= 2:
-    path.nodes = [ininode, finnode]
-    #interpolate the images
-    path.interpolate(control.nimage)
+        path.nodes = [ininode, finnode]
+        #interpolate the images
+        path.interpolate(control.nimage)
 
 def save_restart(path):
     global restart_stage
     global force
-    restart = open("restart_file", 'w')
-    cp.dump(path, restart_stage, force)
+    restart = open("iterations/restart_file", 'w')
+    cp.dump((path, restart_stage, force), restart)
+    restart.close()
 
 def read_restart():
     global path_to_run
     global force
     global restart_stage
     global path
-    file_exist = os.path.isfile("restart_file")
+    file_exist = os.path.isfile("iterations/restart_file")
     if file_exist:
-        path_to_run, restart_stage, force = cp.load("restart_file")
-        path.read_path()
+        restart = open("iterations/restart_file", 'r')
+        path_to_run, restart_stage, force = cp.load(restart)
+        path.read_path("iterations/path.dat")
         path.load_nodes()
-
+        restart.close()
     return file_exist
 
+def write_current():
+    global path
+    dir_name = "iteration%04d" % path.runs
+    dir_name = os.path.join("paths", dir_name)
+    os.mkdir(dir_name)
+    ener = []
+    write_xyz(os.path.join(dir_name, "path.xyz"), path)
+    for i,node in enumerate(path.nodes):
+        ener.append(node.ener)
+        i += 1
+        file_name = os.path.join(dir_name, "image%03d.in" % i)
+        write_mapped_aims(file_name, node.geometry)
+    ener = np.array(ener) - ener[0]
+    enerfile = open(os.path.join(dir_name, "ener.lst"), 'w')
+    for energy in ener:
+        enerfile.write("%.10f\n" % energy)
+    enerfile.close()
+    pathfile = open(os.path.join(dir_name, "path.lst") ,'w')
+    for item in path.get_paths():
+        pathfile.write("%s\n" % item)
+    pathfile.close()
+        
+    
 
 force = 10.0
 control = Control()
 path = Path(control=control)
 restart_stage = 0
-is_restart = read_restart()
+is_restart = read_restart() and control.restart
+
+
+for directory in ["paths", "iterations", "optimized"]:
+    if os.path.isdir(directory):
+        shutil.rmtree(directory)
+os.mkdir("paths")
 
 forcelog = open("forces.log", 'a')
+
 
 if not is_restart:
     initial_interpolation()
 
     #write directory for images
     path_to_run = path.write_all_node()
-    path.write_path()
+    path.write_path("iterations/path.dat")
 
     forcelog.write("#Residual Forces in the system:\n")
     forcelog.flush()
@@ -158,12 +194,13 @@ if restart_stage == 0:
             force = path.move_neb()
         elif control.method == "string":
             force = path.move_string()
+        write_current()
         if force > control.thres:
             path.add_runs()
             path_to_run = path.write_node()
         forcelog.write('%16.16f \n' % force)
         forcelog.flush()
-        path.write_path()
+        path.write_path("iterations/path.dat")
     force = 10.0
     forcelog.write("System has converged.\n")
 
@@ -185,19 +222,22 @@ if control.use_climb:
         run_aims(path_to_run)
         path.load_nodes()
         force = path.move_climb()
+        write_current()
         if force > control.climb_thres:
             path.add_runs()
             path_to_run = path.write_node()
         forcelog.write('%16.16f \n' % force)
         forcelog.flush()
-        path.write_path()
+        path.write_path("iterations/path.dat")
     forcelog.write('Climbing image has converged.\n')
     forcelog.close()
 
 try:
     os.mkdir('optimized')
 except OSError:
-    print "Directory optimized already exist"
+    pass
 
 for i,dir in enumerate(path.get_paths()):
-    dir_util.copy_tree(dir, os.path.join('optimized', "image%02d" % i))
+    i+=1
+    dir_util.copy_tree(dir, os.path.join('optimized', "image%03d" % i))
+write_xyz("optimized/path.xyz", path)

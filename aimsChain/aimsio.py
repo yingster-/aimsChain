@@ -132,16 +132,34 @@ def write_xyz(filename, path):
     Write the path into a multi-image xyz file
     """
     import numpy as np
+    lattice = path.lattice_vector
+        
     geo = open(filename, 'w')
-    for node in path.nodes:
-        geometry = node.geometry
-        geo.write('%d \n' % len(geometry.atoms))
-        geo.write("Energy: %.16e \n" % node.ener)
-        for atom in geometry.atoms:
-            geo.write(atom.symbol +'\t')
-            for coord in atom.positions:
-                geo.write('%16.12f \t' % coord)
-            geo.write('\n') 
+    if not path.periodic:
+        for node in path.nodes:
+            geometry = node.geometry
+            geo.write('%d \n' % len(geometry.atoms))
+            geo.write("Energy: %.16e \n" % node.ener)
+            for atom in geometry.atoms:
+                geo.write(atom.symbol +'\t')
+                for coord in atom.positions:
+                    geo.write('%16.12f \t' % coord)
+                geo.write('\n') 
+    else:
+        for node in path.nodes:
+            geometry = node.geometry
+            geo.write('%d \n' % len(geometry.atoms)*8)
+            geo.write("Energy: %.16e \n" % node.ener)
+            for atom in geometry.atoms:
+                geo.write(atom.symbol +'\t')
+                for coord in atom.positions:
+                    for a in [-1,0]:
+                        for b in [-1,0]:
+                            for c in [-1,0]:
+                                coord += a*lattice[0] + b*lattice[1] + c*lattice[2]
+                                geo.write('%16.12f \t' % coord)
+                geo.write('\n') 
+
     geo.close()
 
 
