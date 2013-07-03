@@ -72,6 +72,8 @@ class Control(object):
         self.fire_a = 0.1
         #map back to the central cell?
         self.map_unit_cell = True
+        #lattice view for 
+        self.xyz_lattice = [2,2,1]
     
         self.read()
     
@@ -161,6 +163,8 @@ class Control(object):
                     self.fire_a = float(inp[1])               
                 elif inp[0] == "map_unit_cell":
                     self.map_unit_cell = parse_bool(inp[1])
+                elif inp[0] == "xyz_lattice":
+                    self.xyz_lattice = [int(inp[1]), int(inp[2]), int(inp[3])]
         
 
         #assign climbing thres if it's not set
@@ -172,7 +176,7 @@ class Control(object):
 def parse_bool(string):
 
     if string in ['true','True','.true.', 'Y', 'Yes', 'YES'
-                  'TRUE', 'y', 'yes', '1', 't']:
+                  'TRUE', 'y', 'yes', '1', 't', 'T']:
         return True
     else:
         return False

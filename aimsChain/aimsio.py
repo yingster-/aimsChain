@@ -127,7 +127,7 @@ def write_mapped_aims(filename, atoms):
             geo.write(line + '\n')
     geo.close()
 
-def write_xyz(filename, path):
+def write_xyz(filename, path, repeat=[2,2,1]):
     """
     Write the path into a multi-image xyz file
     """
@@ -148,13 +148,13 @@ def write_xyz(filename, path):
     else:
         for node in path.nodes:
             geometry = node.geometry
-            geo.write('%d \n' % (len(geometry.atoms)*8))
+            geo.write('%d \n' % (len(geometry.atoms)*np.prod(repeat)))
             geo.write("Energy: %.16e \n" % node.ener)
             for atom in geometry.atoms:
                 pos = atom.positions
-                for a in [-1,0]:
-                    for b in [-1,0]:
-                        for c in [-1,0]:
+                for a in range(repeat[0]):
+                    for b in range(repeat[1]):
+                        for c in range(repeat[2]):
                             geo.write(atom.symbol +'\t')
                             for coord in (pos+a*lattice[0]+b*lattice[1]+c*lattice[2]):
                                 geo.write('%16.12f \t' % coord)

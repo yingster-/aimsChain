@@ -112,7 +112,7 @@ class Node(object):
             return np.zeros(np.shape(self.forces))
         elif self.climb:
             forces = self.forces
-            tangent = self.get_tangent(for_climb=True, test_tangent = True)
+            tangent = self.get_tangent(for_climb=True, test_tangent = False)
             return forces - 2*vproj(forces,tangent)
         else:
             if self.control.method == "neb":
@@ -192,7 +192,7 @@ class Node(object):
 
     def get_tangent(self, for_climb=False, unit=True, test_tangent = False):
         from aimsChain.utility import vunit
-        from aimsChain.interpolate import get_t
+        from aimsChain.interpolate import get_t, spline_pos
         prev = self.prev
         next = self.next
         tangent = None
@@ -217,10 +217,10 @@ class Node(object):
                 else:
                     tangent = (min * tan1 + max * tan2)
             else:
-                tan1 = vunit(tan1)
-                tan2 = vunit(tan2)
-                param_t = get_t([prev.positions, self.positions, next.positions])[1]
-                tangent = param_t*tan1 + (1-param_t) * tan2
+                positions = [prev.positions, self.positions, next.positions]
+                param = get_t(positions)
+                derv = spline_pos(positions, param, param, 3, 1)[1]
+                tangent = derv
         if unit:
             return vunit(tangent)
         

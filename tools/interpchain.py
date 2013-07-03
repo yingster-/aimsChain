@@ -14,26 +14,6 @@ from aimsChain.config import Control
 from aimsChain.interpolate import get_t
 from aimsChain.aimsio import write_mapped_aims, write_xyz, write_aims
 
-def run_aims(paths):
-    global control
-    while len(paths) > 0:
-        path = paths[0]
-        if control.restart:
-            save_restart(paths)
-        #remove the ending slash if it exist
-        if path[-1] == "/":
-            path = path[:-1]
-        #generate the name for output
-        filename = path[len(path)-path[::-1].index('/'):]+'.out'
-        
-        command = 'cd ' + path + ';' + control.run_aims + ' > ' + filename
-        subprocess.call(command, shell=True)
-        paths.remove(path)
-        if control.restart:
-            save_restart(paths)
-        
-    paths = []
-
 
 def initial_interpolation():
     global control
@@ -137,117 +117,19 @@ def read_restart():
         restart.close()
     return file_exist
 
-def write_current():
-    global path
-    dir_name = "iteration%04d" % path.runs
-    dir_name = os.path.join("paths", dir_name)
-    try:
-        os.mkdir(dir_name)
-    except OSError:
-        pass
-    ener = []
-    write_xyz(os.path.join(dir_name, "path.xyz"), path, control.xyz_lattice)
-    for i,node in enumerate(path.nodes):
-        ener.append(node.ener)
-        i += 1
-        file_name = os.path.join(dir_name, "image%03d.in" % i)
-        if control.map_unit_cell:
-            write_mapped_aims(file_name, node.geometry)
-        else:
-            write_aims(file_name, node.geometry)
-    ener = np.array(ener) - ener[0]
-    enerfile = open(os.path.join(dir_name, "ener.lst"), 'w')
-    for energy in ener:
-        enerfile.write("%.10f\n" % energy)
-    enerfile.close()
-    pathfile = open(os.path.join(dir_name, "path.lst") ,'w')
-    for item in path.get_paths():
-        pathfile.write("%s\n" % item)
-    pathfile.close()
-        
-    
-
-force = 10.0
 control = Control()
 path = Path(control=control)
-restart_stage = 0
-is_restart = read_restart() and control.restart
 
+if os.path.isdir("interpolation"):
+    shutil.rmtree("interpolation")
+os.mkdir("interpolation")
 
-forcelog = open("forces.log", 'a')
+initial_interpolation()
 
+write_xyz(os.path.join("interpolation", "path.xyz"),path, [1,1,1])
 
-if not is_restart:
-    for directory in ["paths", "iterations", "optimized"]:
-        if os.path.isdir(directory):
-            shutil.rmtree(directory)
-    os.mkdir("paths")
+for i,node in enumerate(path.nodes):
+    i += 1
+    file_name = os.path.join("interpolation", "image%03d.in" % i)
+    write_aims(file_name, node.geometry)
 
-    
-    initial_interpolation()
-
-    #write directory for images
-    path_to_run = path.write_all_node()
-    path.write_path("iterations/path.dat")
-
-    forcelog.write("#Residual Forces in the system:\n")
-    forcelog.flush()
-
-if restart_stage == 0:
-    while force > control.thres:
-        run_aims(path_to_run)
-        path.load_nodes()
-        if control.method == "neb":
-            force = path.move_neb()
-        elif control.method == "string":
-            force = path.move_string()
-        write_current()
-        if force > control.thres:
-            path.add_runs()
-            path_to_run = path.write_node()
-        forcelog.write('%16.16f \n' % force)
-        forcelog.flush()
-        path.write_path("iterations/path.dat")
-    force = 10.0
-    forcelog.write("System has converged.\n")
-
-forcelog.close()
-
-if control.use_climb:
-    forcelog = open("climbing_forces.log", 'a')
-    if restart_stage != 1:
-        path.find_climb()
-        path.add_runs()
-        if control.climb_control != "control.in":
-            path_to_run = path.write_all_node(control.climb_control)
-        else:
-            path_to_run = path.write_node()
-
-        forcelog.write("#Residual Forces in the Climbing image:\n")
-        forcelog.flush()
-        restart_stage = 1
-
-
-    while force > control.climb_thres:
-        run_aims(path_to_run)
-        path.load_nodes()
-        force = path.move_climb()
-        write_current()
-        if force > control.climb_thres:
-            path.add_runs()
-            path_to_run = path.write_node(control.climb_control)
-        forcelog.write('%16.16f \n' % force)
-        forcelog.flush()
-        path.write_path("iterations/path.dat")
-    forcelog.write('Climbing image has converged.\n')
-    forcelog.close()
-
-try:
-    os.mkdir('optimized')
-except OSError:
-    pass
-
-for i,dir in enumerate(path.get_paths()):
-    i+=1
-    dir_util.copy_tree(dir, os.path.join('optimized', "image%03d" % i))
-write_xyz("optimized/path.xyz", path, control.xyz_lattice)
