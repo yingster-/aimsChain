@@ -107,7 +107,7 @@ def write_mapped_aims(filename, atoms):
     
     for atom in atoms.atoms:
         geo.write('atom ')
-        positions = np.linalg.solve(lattice, atom.positions)
+        positions = np.linalg.solve(lattice.transpose(), atom.positions.transpose()).transpose()
         positions %= 1.0
         positions %= 1.0
         positions = np.dot(positions, lattice)
@@ -148,17 +148,17 @@ def write_xyz(filename, path):
     else:
         for node in path.nodes:
             geometry = node.geometry
-            geo.write('%d \n' % len(geometry.atoms)*8)
+            geo.write('%d \n' % (len(geometry.atoms)*8))
             geo.write("Energy: %.16e \n" % node.ener)
             for atom in geometry.atoms:
-                geo.write(atom.symbol +'\t')
-                for coord in atom.positions:
-                    for a in [-1,0]:
-                        for b in [-1,0]:
-                            for c in [-1,0]:
-                                coord += a*lattice[0] + b*lattice[1] + c*lattice[2]
+                pos = atom.positions
+                for a in [-1,0]:
+                    for b in [-1,0]:
+                        for c in [-1,0]:
+                            geo.write(atom.symbol +'\t')
+                            for coord in (pos+a*lattice[0]+b*lattice[1]+c*lattice[2]):
                                 geo.write('%16.12f \t' % coord)
-                geo.write('\n') 
+                            geo.write('\n') 
 
     geo.close()
 

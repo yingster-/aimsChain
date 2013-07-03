@@ -112,7 +112,7 @@ class Node(object):
             return np.zeros(np.shape(self.forces))
         elif self.climb:
             forces = self.forces
-            tangent = self.get_tangent(for_climb=True)
+            tangent = self.get_tangent(for_climb=True, test_tangent = True)
             return forces - 2*vproj(forces,tangent)
         else:
             if self.control.method == "neb":
@@ -190,7 +190,9 @@ class Node(object):
         self.__previous_dir = value
 
 
-    def get_tangent(self, for_climb=False, unit=True):
+    def get_tangent(self, for_climb=False, unit=True, test_tangent = False):
+        from aimsChain.utility import vunit
+        from aimsChain.interpolate import get_t
         prev = self.prev
         next = self.next
         tangent = None
@@ -206,7 +208,7 @@ class Node(object):
                 tangent = tan1
             elif next.ener < self.ener and self.ener < prev.ener and not for_climb:
                 tangent = tan2
-            else:
+            elif not test_tangent:
                 max = np.nanmax((abs(next.ener-self.ener), abs(self.ener-prev.ener)))
                 min = np.nanmin((abs(next.ener-self.ener), abs(self.ener-prev.ener)))
 
@@ -214,13 +216,18 @@ class Node(object):
                     tangent = (max * tan1 + min * tan2)
                 else:
                     tangent = (min * tan1 + max * tan2)
+            else:
+                tan1 = vunit(tan1)
+                tan2 = vunit(tan2)
+                param_t = get_t([prev.positions, self.positions, next.positions])[1]
+                tangent = param_t*tan1 + (1-param_t) * tan2
         if unit:
             return vunit(tangent)
         
 
         return tangent
 
-    def write_node(self, write_fixed = False):
+    def write_node(self, write_fixed = False, control_file = "control.in"):
         """
         create a directory for each node
         including geometry and control
@@ -234,7 +241,7 @@ class Node(object):
             if not os.path.isdir(dir):
                 os.makedirs(dir)
             write_aims(os.path.join(dir, "geometry.in"), self.geometry)
-            shutil.copy("control.in", dir)
+            shutil.copy(control_file, os.path.join(dir, "control.in"))
             if (self.path and self.control.aims_restart
                 and self.previous_dir):
                 if self.previous_dir != self.dir:
@@ -336,7 +343,7 @@ class Path(object):
                 node.ener = ener
                 node.forces = forces
 
-    def write_node(self):
+    def write_node(self, control_file="control.in"):
         """
         create a new folder for each node,ignore fixed
         including geometry and control
@@ -348,12 +355,12 @@ class Path(object):
         path = []
         for node in self.nodes:
             node.update_dir()
-            dir=node.write_node()
+            dir=node.write_node(control_file=control_file)
             if dir != None:
                 path.append(dir)
         return path
     
-    def write_all_node(self):
+    def write_all_node(self, control_file = "control.in"):
         """
         create a new folder for each node, even fixed
         including geometry and control
@@ -365,7 +372,7 @@ class Path(object):
         path = []
         for node in self.nodes:
             node.update_dir(True)
-            path.append(node.write_node(True))
+            path.append(node.write_node(True, control_file))
         return path
     
     def get_paths(self, return_fixed = True):
@@ -490,10 +497,6 @@ class Path(object):
         move the nodes according to NEB rules
         """
         import os
-        from aimsChain.optimizer.lbfgs import LBFGS
-        from aimsChain.optimizer.newbfgs import BFGS
-        from aimsChain.optimizer.euler import EULER
-        from aimsChain.optimizer.fire import FIRE
         positions = []
         forces = []
         new_pos = []
@@ -504,17 +507,17 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if self.control.global_opt:
-            hess = os.path.join(self.nodes[0].dir_pre, "path.opt")
-            opt = BFGS(hess, alpha = 70)
+            save = os.path.join(self.nodes[0].dir_pre, "path.opt")
+            opt = get_optimizer(self.control, self.control.optimizer, save)
             opt.initialize()
             opt.load()
             new_pos = opt.step(positions, forces)
             opt.dump()
         else:
             for i,node in enumerate(self.nodes):
-                hess = "%.4f.opt" % node.param
-                hess = os.path.join(node.dir_pre, hess)
-                opt = FIRE(hess)
+                save = "%.4f.opt" % node.param
+                save = os.path.join(node.dir_pre, save)
+                opt = get_optimizer(self.control, self.control.optimizer, save)
                 opt.initialize()
                 opt.load()
                 new_pos.append(opt.step(positions[i],
@@ -534,10 +537,6 @@ class Path(object):
         move the node according to normal force
         the original string method
         """
-        from aimsChain.optimizer.lbfgs import LBFGS
-        from aimsChain.optimizer.newbfgs import BFGS
-        from aimsChain.optimizer.dampedbfgs import dampedBFGS
-        from aimsChain.optimizer.fire import FIRE
         from aimsChain.interpolate import spline_pos
         import os
         positions = []
@@ -558,17 +557,17 @@ class Path(object):
         forces = np.array(forces)
         positions = np.array(positions)
         if self.control.global_opt:
-            hess = os.path.join(self.nodes[0].dir_pre, "path.opt")
-            opt = dampedBFGS(hess)
+            save = os.path.join(self.nodes[0].dir_pre, "path.opt")
+            opt = get_optimizer(self.control, self.control.optimizer, save)
             opt.initialize()
             opt.load()
             new_pos = opt.step(positions, forces)
             opt.dump()
         else:
             for i,node in enumerate(self.nodes):
-                hess = "%.4f.opt" % node.param
-                hess = os.path.join(node.dir_pre, hess)
-                opt = FIRE(hess)
+                save = "%.4f.opt" % node.param
+                save = os.path.join(node.dir_pre, save)
+                opt = get_optimizer(self.control, self.control.optimizer, save)
                 opt.initialize()
                 opt.load()
                 new_pos.append(opt.step(positions[i],
@@ -648,9 +647,6 @@ class Path(object):
         """
         move the climbing nodes using BFGS
         """
-        from aimsChain.optimizer.fire import FIRE
-        from aimsChain.optimizer.newbfgs import BFGS
-        from aimsChain.optimizer.dampedbfgs import dampedBFGS
         from aimsChain.interpolate import spline_pos, get_t
         import os
         moving_nodes = []
@@ -665,12 +661,12 @@ class Path(object):
 
         if climb_mode == 1:
             node = moving_nodes[0]
-            hess="%.4f.climb.opt" % node.param
-            hess = os.path.join(node.dir_pre, hess)
+            save ="%.4f.climb.opt" % node.param
+            save = os.path.join(node.dir_pre, save)
             climb_force = node.climb_forces
             forces.append(climb_force)
 
-            opt = dampedBFGS(hess)
+            opt = get_optimizer(self.control, self.control.climb_optimizer, save)
             opt.initialize()
             opt.load()
             node.positions = opt.step(node.positions,
@@ -692,18 +688,18 @@ class Path(object):
                     climb_ind = i
             forces = np.array(forces)
             positions = np.array(positions)
-            if self.control.global_opt:
-                hess = os.path.join(moving_nodes[0].dir_pre, "climbing.opt")
-                opt = dampedBFGS(hess)
+            if self.control.climb_global_opt:
+                save = os.path.join(moving_nodes[0].dir_pre, "climbing.opt")
+                opt = get_optimizer(self.control, self.control.climb_optimizer, save)
                 opt.initialize()
                 opt.load()
                 new_pos = opt.step(positions, forces)
                 opt.dump()
             else:
                 for i,node in enumerate(moving_nodes):
-                    hess = "%.4f.climb.opt" % node.param
-                    hess = os.path.join(node.dir_pre, hess)
-                    opt = FIRE(hess)
+                    save = "%.4f.climb.opt" % node.param
+                    save = os.path.join(node.dir_pre, save)
+                    opt = get_optimizer(self.control, self.control.climb_optimizer, save)
                     opt.initialize()
                     opt.load()
                     new_pos.append(opt.step(positions[i],
@@ -825,3 +821,38 @@ class Path(object):
 
                 nodes.append(tmp_node)
         self.nodes = nodes
+
+
+def get_optimizer(control, key, data_name):
+        from aimsChain.optimizer.lbfgs import LBFGS
+        from aimsChain.optimizer.newbfgs import BFGS
+        from aimsChain.optimizer.dampedbfgs import dampedBFGS
+        from aimsChain.optimizer.fire import FIRE
+
+        opt = None
+        if key.lower() == "lbfgs":
+            opt = LBFGS(data_name, 
+                        maxstep=control.lbfgs_maxstep, 
+                        memory = control.lbfgs_memory, 
+                        alpha = control.lbfgs_alpha)
+        elif key.lower() == "bfgs":
+            opt = BFGS(data_name,
+                       maxstep = control.bfgs_maxstep,
+                       alpha = control.bfgs_alpha)
+        elif key.lower() == "fire":
+            opt = FIRE(data_name,
+                       dt = control.fire_dt,
+                       maxstep = control.fire_maxstep,
+                       dtmax = control.fire_dtmax,
+                       Nmin = control.fire_nmin,
+                       finc = control.fire_finc,
+                       fdec = control.fire_fdec,
+                       astart = control.fire_astart,
+                       fa = control.fire_fa,
+                       a = control.fire_a)
+        else:
+            opt = dampedBFGS(data_name,
+                             maxstep = control.bfgs_maxstep,
+                             alpha = control.bfgs_alpha)
+        
+        return opt

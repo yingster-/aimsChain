@@ -12,7 +12,7 @@ from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
 from aimsChain.config import Control
 from aimsChain.interpolate import get_t
-from aimsChain.aimsio import write_mapped_aims, write_xyz
+from aimsChain.aimsio import write_mapped_aims, write_xyz, write_aims
 
 def run_aims(paths):
     global control
@@ -148,7 +148,10 @@ def write_current():
         ener.append(node.ener)
         i += 1
         file_name = os.path.join(dir_name, "image%03d.in" % i)
-        write_mapped_aims(file_name, node.geometry)
+        if control.map_unit_cell:
+            write_mapped_aims(file_name, node.geometry)
+        else:
+            write_aims(file_name, node.geometry)
     ener = np.array(ener) - ener[0]
     enerfile = open(os.path.join(dir_name, "ener.lst"), 'w')
     for energy in ener:
@@ -168,15 +171,16 @@ restart_stage = 0
 is_restart = read_restart() and control.restart
 
 
-for directory in ["paths", "iterations", "optimized"]:
-    if os.path.isdir(directory):
-        shutil.rmtree(directory)
-os.mkdir("paths")
-
 forcelog = open("forces.log", 'a')
 
 
 if not is_restart:
+    for directory in ["paths", "iterations", "optimized"]:
+        if os.path.isdir(directory):
+            shutil.rmtree(directory)
+    os.mkdir("paths")
+
+    
     initial_interpolation()
 
     #write directory for images
@@ -211,7 +215,10 @@ if control.use_climb:
     if restart_stage != 1:
         path.find_climb()
         path.add_runs()
-        path_to_run = path.write_node()
+        if control.climb_control != "control.in":
+            path_to_run = path.write_all_node(control.climb_control)
+        else:
+            path_to_run = path.write_node()
 
         forcelog.write("#Residual Forces in the Climbing image:\n")
         forcelog.flush()
@@ -225,7 +232,7 @@ if control.use_climb:
         write_current()
         if force > control.climb_thres:
             path.add_runs()
-            path_to_run = path.write_node()
+            path_to_run = path.write_node(control.climb_control)
         forcelog.write('%16.16f \n' % force)
         forcelog.flush()
         path.write_path("iterations/path.dat")

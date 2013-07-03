@@ -37,14 +37,42 @@ class Control(object):
         self.method = "string"
         #global optimizer
         self.global_opt = True
+        #global optimizer for climbing image
+        self.climb_global_opt = True
         #spring constant
-        self.spring_k = 10.0
+        self.spring_k = 20.0
         #restart file
         self.aims_restart = None
         #resample external geometry
         self.resample = False
         #restart or not
         self.restart = False
+        #optimizer for evolving path
+        self.optimizer = "dampedBFGS"
+        #optimizer for climbing image
+        self.climb_optimizer = "dampedBFGS"
+        #control file for climbing image
+        self.climb_control = "control.in"
+        #lbfgs parameters
+        self.lbfgs_alpha = 70.0
+        self.lbfgs_memory = 25
+        self.lbfgs_maxstep = 0.04
+        #bfgs parameters
+        self.bfgs_alpha = 70.0
+        self.bfgs_maxstep = 0.04
+        #fire parameters
+        self.fire_dt = 0.02
+        self.fire_maxstep = 0.04
+        self.fire_dtmax = 1.0
+        self.fire_nmin = 5
+        self.fire_finc = 1.1
+        self.fire_fdec = 0.5
+        self.fire_astart = 0.1
+        self.fire_fa = 0.99
+        self.fire_a = 0.1
+        #map back to the central cell?
+        self.map_unit_cell = True
+    
         self.read()
     
     def read(self, filename = "chain.in"):
@@ -95,6 +123,45 @@ class Control(object):
                     self.resample = parse_bool(inp[1])
                 elif inp[0] == "restart":
                     self.restart = parse_bool(inp[1])
+                elif inp[0] == "climb_global_optimizer":
+                    self.climb_global_opt = parse_bool(inp[1])
+                elif inp[0] == "optimizer":
+                    self.optimizer = str(inp[1])
+                elif inp[0] == "climb_optimizer":
+                    self.climb_optimizer = str(inp[1])
+                elif inp[0] == "climb_control":
+                    self.climb_control = str(inp[1])
+                elif inp[0] == "lbfgs_alpha":
+                    self.lbfgs_alpha = float(inp[1])
+                elif inp[0] == "lbfgs_memory":
+                    self.lbfgs_memory = int(inp[1])
+                elif inp[0] == "lbfgs_maxstep":
+                    self.lbfgs_maxstep = float(inp[1])
+                elif inp[0] == "bfgs_alpha":
+                    self.bfgs_alpha = float(inp[1])
+                elif inp[0] == "bfgs_maxstep":
+                    self.bfgs_maxstep = float(inp[1])
+                elif inp[0] == "fire_dt":
+                    self.fire_dt = float(inp[1])
+                elif inp[0] == "fire_maxstep":
+                    self.fire_maxstep = float(inp[1])
+                elif inp[0] == "fire_dtmax":
+                    self.fire_dtmax = float(inp[1])
+                elif inp[0] == "fire_nmin":
+                    self.fire_nmin = int(inp[1])
+                elif inp[0] == "fire_finc":
+                    self.fire_finc = float(inp[1])
+                elif inp[0] == "fire_fdec":
+                    self.fire_fdec = float(inp[1])
+                elif inp[0] == "fire_astart":
+                    self.fire_astart = float(inp[1])
+                elif inp[0] == "fire_fa":
+                    self.fire_fa = float(inp[1])
+                elif inp[0] == "fire_a":
+                    self.fire_a = float(inp[1])               
+                elif inp[0] == "map_unit_cell":
+                    self.map_unit_cell = parse_bool(inp[1])
+        
 
         #assign climbing thres if it's not set
         if self.climb_thres == None:
