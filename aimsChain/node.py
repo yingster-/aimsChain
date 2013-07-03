@@ -196,9 +196,9 @@ class Node(object):
         prev = self.prev
         next = self.next
         tangent = None
-        if prev == None:
+        if not prev:
             tangent = (next.positions - self.positions)
-        elif next == None:
+        elif not next:
             tangent = (self.positions - prev.positions)
         else:
             tan1 = next.positions - self.positions
@@ -218,8 +218,14 @@ class Node(object):
                     tangent = (min * tan1 + max * tan2)
             else:
                 positions = [prev.positions, self.positions, next.positions]
+                loc = 1
+                if prev.prev:
+                    positions.insert(0,prev.prev.positions)
+                    loc += 1
+                if next.next:
+                    positions.append(next.next.positions)
                 param = get_t(positions)
-                derv = spline_pos(positions, param, param, 3, 1)[1]
+                derv = spline_pos(positions, param, param, 3, 1)[loc]
                 tangent = derv
         if unit:
             return vunit(tangent)

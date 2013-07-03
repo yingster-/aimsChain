@@ -1,4 +1,4 @@
-run_aims mpiexec -ppn 8 -n $NSLOTS /u/yyao/bin/aims.102212rpt2.scalapack.mpi.x
+run_aims mpiexec -ppn 8 -n $NSLOTS /u/yyao/bin/aims.020213.scalapack.mpi.x
 method string
 force_thres 0.01
 initial_file ini.in

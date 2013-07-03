@@ -1,0 +1,110 @@
+  lattice_vector        11.25430081        0.00000000        0.00000000
+  lattice_vector        -5.62715041        9.74651041        0.00000000
+  lattice_vector         0.00000000        0.00000000       40.00000000
+
+            atom        -0.55906659        5.49960729       14.69139992  C
+            atom         0.67394373        4.80832586       14.69836790  C
+            atom        -0.58951535        6.82371349       14.68471567  N
+            atom         1.81963014        5.47322496       14.70134057  N
+            atom         6.18301947       -2.25810963       14.68936507  C
+            atom        -9.46513693        6.79765894       14.69645804  C
+            atom        -2.08157522        4.66206589       14.72578937  Cl
+            atom         0.75057210        3.07258747       14.74359578  Cl
+            atom        -5.15110254       -0.52202327       14.71966687  Cl
+            atom        -2.31739608       -2.10837448       14.74045917  Cl
+            atom        -0.00021633       -0.00108788       11.51253656  Pt
+            atom         2.81386583       -0.00099075       11.51201696  Pt
+            atom        -5.62742573        0.00094298       11.51015230  Pt
+            atom        -2.81283137        0.00000472       11.50680818  Pt
+            atom        -1.40737118        2.43444043       11.50672162  Pt
+            atom         1.40719217        2.43218876       11.50999362  Pt
+            atom        -7.03467030        2.43994610       11.51192672  Pt
+            atom        -4.22207180        2.43657260       11.51052124  Pt
+            atom        -2.81521386        4.87204337       11.51035812  Pt
+            atom        -0.00008861        4.87184240       11.48350529  Pt
+            atom        -8.44807046        4.87641099       11.51240917  Pt
+            atom        -5.63128319        4.87017345       11.51115228  Pt
+            atom         1.40704108       -2.43730270       11.51162319  Pt
+            atom         4.21804143       -2.43657710       11.50754003  Pt
+            atom        -4.22013811       -2.43758497       11.48287839  Pt
+            atom        -1.40367790       -2.43678015       11.51014776  Pt
+            atom         1.40722758        0.81160832        9.18795516  Pt
+            atom         4.22077791        0.81233711        9.18927227  Pt
+            atom        -4.22109093        0.81134416        9.18685827  Pt
+            atom        -1.40639175        0.81161066        9.18660723  Pt
+            atom         0.00015785        3.24385201        9.18199768  Pt
+            atom         2.81388641        3.24698385        9.18901269  Pt
+            atom        -5.62752561        3.24852254        9.18786571  Pt
+            atom        -2.81363372        3.24917471        9.18707821  Pt
+            atom         4.21682233       -4.05914270        9.18218686  Pt
+            atom         7.03803702       -4.06388170        9.17799661  Pt
+            atom        -1.40566599       -4.06105809        9.18881223  Pt
+            atom         1.40647398       -4.06213504        9.18918219  Pt
+            atom         2.81031979       -1.62280722        9.18771521  Pt
+            atom         5.62330323       -1.62290138        9.18240431  Pt
+            atom        -2.80957285       -1.62281976        9.18186400  Pt
+            atom         0.00047849       -1.62494882        9.18773974  Pt
+            atom         0.00000000        1.62442007        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         2.81357809        1.62442007        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -5.62714464        1.62442007        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -2.81356655        1.62442007        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -1.40678904        4.06105016        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         1.40678904        4.06105016        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -7.03393368        4.06105016        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -4.22035560        4.06105016        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         2.81357232       -3.24883015        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         5.62715041       -3.24883015        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -2.81357231       -3.24883015        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         0.00000577       -3.24883015        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         1.40678328       -0.81220005        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         4.22036137       -0.81220005        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -4.22036136       -0.81220005        6.89183066  Pt
+  constrain_relaxation .true.
+            atom        -1.40678327       -0.81220005        6.89183066  Pt
+  constrain_relaxation .true.
+            atom         0.00000000        0.00000000        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         2.81357809        0.00000000        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -5.62714464        0.00000000        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -2.81356655        0.00000000        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -1.40678904        2.43663010        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         1.40678904        2.43663010        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -7.03393368        2.43663010        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -4.22035560        2.43663010        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         2.81357232       -4.87325022        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         5.62715041       -4.87325022        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -2.81357231       -4.87325022        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         0.00000577       -4.87325022        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         1.40678328       -2.43662012        4.59455377  Pt
+  constrain_relaxation .true.
+            atom         4.22036137       -2.43662012        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -4.22036136       -2.43662012        4.59455377  Pt
+  constrain_relaxation .true.
+            atom        -1.40678327       -2.43662012        4.59455377  Pt
+  constrain_relaxation .true.
