@@ -753,6 +753,9 @@ class Path(object):
                 new_node.update_dir()
                 self.nodes = new_node
         else:
+            k = 3
+            if self.n_nodes() == 3:
+                k = 2
             positions = []
             old_t = []
             new_t = np.linspace(0,1,n+2)
@@ -760,7 +763,7 @@ class Path(object):
                 old_t.append(node.param)
                 positions.append(node.positions)
             positions = np.array(positions)
-            positions = spline_pos(positions, new_t, old_t)[1:-1]
+            positions = spline_pos(positions, new_t, old_t, k = k)[1:-1]
             new_t = new_t[1:-1]
             self.nodes = [self.nodes[0], self.nodes[-1]]
             for i,t in enumerate(new_t):

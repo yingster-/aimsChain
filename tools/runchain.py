@@ -146,9 +146,13 @@ def write_current():
     except OSError:
         pass
     ener = []
+    climb = []
+    fixed = []
     write_xyz(os.path.join(dir_name, "path.xyz"), path, control.xyz_lattice)
     for i,node in enumerate(path.nodes):
         ener.append(node.ener)
+        climb.append(node.climb)
+        fixed.append(node.fixed)
         i += 1
         file_name = os.path.join(dir_name, "image%03d.in" % i)
         if control.map_unit_cell:
@@ -157,12 +161,22 @@ def write_current():
             write_aims(file_name, node.geometry)
     ener = np.array(ener) - ener[0]
     enerfile = open(os.path.join(dir_name, "ener.lst"), 'w')
-    for energy in ener:
-        enerfile.write("%.10f\n" % energy)
+    for i,energy in enumerate(ener):
+        enerfile.write("image%03d\t%.10f" % (i+1, energy))
+        if climb[i]:
+            enerfile.write("\t CLIMB")
+        if fixed[i]:
+            enerfile.write("\t FIXED")
+        enerfile.write("\n")
     enerfile.close()
     pathfile = open(os.path.join(dir_name, "path.lst") ,'w')
-    for item in path.get_paths():
-        pathfile.write("%s\n" % item)
+    for i,item in enumerate(path.get_paths()):
+        pathfile.write("image%03d\t%s" % (i+1,item))
+        if climb[i]:
+            pathfile.write("\t CLIMB")
+        if fixed[i]:
+            pathfile.write("\t FIXED")
+        pathfile.write("\n")
     pathfile.close()
         
     
@@ -202,10 +216,11 @@ if restart_stage == 0:
         elif control.method == "string":
             force = path.move_string()
         write_current()
+        curr_runs = path.runs
         if force > control.thres:
             path.add_runs()
             path_to_run = path.write_node()
-        forcelog.write('%16.16f \n' % force)
+        forcelog.write('iteration%04d\t%16.16f \n' % (curr_runs,force))
         forcelog.flush()
         path.write_path("iterations/path.dat")
     force = 10.0
@@ -233,10 +248,11 @@ if control.use_climb:
         path.load_nodes()
         force = path.move_climb()
         write_current()
+        curr_runs = path.runs
         if force > control.climb_thres:
             path.add_runs()
             path_to_run = path.write_node(control.climb_control)
-        forcelog.write('%16.16f \n' % force)
+        forcelog.write('iteration%04d\t%16.16f \n' % (curr_runs, force))
         forcelog.flush()
         path.write_path("iterations/path.dat")
     forcelog.write('Climbing image has converged.\n')

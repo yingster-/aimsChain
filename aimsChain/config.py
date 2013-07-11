@@ -28,7 +28,8 @@ class Control(object):
         #climbing mode
         #1 for single node climb
         #2 for 3 node climb
-        self.climb_mode = 1
+        #3 for all node climb
+        self.climb_mode = 2
         #command to run aims
         self.run_aims = "mpiexec -ppn 8 -n $NSLOTS ~/bin/aims.081912.scalapack.mpi.x"
         #using external starting geometry
@@ -71,7 +72,7 @@ class Control(object):
         self.fire_fa = 0.99
         self.fire_a = 0.1
         #map back to the central cell?
-        self.map_unit_cell = True
+        self.map_unit_cell = False
         #lattice view for 
         self.xyz_lattice = [2,2,1]
     
@@ -165,6 +166,8 @@ class Control(object):
                     self.map_unit_cell = parse_bool(inp[1])
                 elif inp[0] == "xyz_lattice":
                     self.xyz_lattice = [int(inp[1]), int(inp[2]), int(inp[3])]
+                    if len(self.xyz_lattice) != 3:
+                        self.xyz_lattice = [2,2,1]
         
 
         #assign climbing thres if it's not set
@@ -176,7 +179,7 @@ class Control(object):
 def parse_bool(string):
 
     if string in ['true','True','.true.', 'Y', 'Yes', 'YES'
-                  'TRUE', 'y', 'yes', '1', 't', 'T']:
+                  'TRUE', 'y', 'yes', '1', 't', 'T', 'on', 'On', 'ON']:
         return True
     else:
         return False

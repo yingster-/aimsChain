@@ -126,7 +126,7 @@ os.mkdir("interpolation")
 
 initial_interpolation()
 
-write_xyz(os.path.join("interpolation", "path.xyz"),path, [1,1,1])
+write_xyz(os.path.join("interpolation", "path.xyz"),path, control.xyz_lattice)
 
 for i,node in enumerate(path.nodes):
     i += 1
