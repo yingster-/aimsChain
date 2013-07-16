@@ -7,7 +7,7 @@ import shutil
 import numpy as np
 import cPickle as cp
 
-from aimsChain.node import Path
+from aimsChain.path import Path
 from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
 from aimsChain.config import Control

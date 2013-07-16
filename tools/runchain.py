@@ -7,7 +7,8 @@ import shutil
 import numpy as np
 import cPickle as cp
 
-from aimsChain.node import Path
+from aimsChain.string_path import StringPath
+from aimsChain.neb_path import NebPath
 from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
 from aimsChain.config import Control
@@ -109,6 +110,7 @@ def initial_interpolation():
     except:
         print '!Error interprating the external geometries\n'
         print '!Using standard interpolation method for initial geometries\n'
+        nodes = [ininode, finnode]
 
     #if there were no external geometry, linear interpolate the image
     if len(nodes) <= 2:
@@ -183,7 +185,10 @@ def write_current():
 
 force = 10.0
 control = Control()
-path = Path(control=control)
+if control.method == "neb":
+    path = NebPath(control=control)
+else:
+    path = StringPath(control=control)
 restart_stage = 0
 is_restart = read_restart() and control.restart
 
@@ -211,10 +216,7 @@ if restart_stage == 0:
     while force > control.thres:
         run_aims(path_to_run)
         path.load_nodes()
-        if control.method == "neb":
-            force = path.move_neb()
-        elif control.method == "string":
-            force = path.move_string()
+        force = path.move_nodes()
         write_current()
         curr_runs = path.runs
         if force > control.thres:

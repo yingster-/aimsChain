@@ -1,7 +1,10 @@
 """
 This module defines the basic Atom object.
+Atoms is the basic geometry object, simply a list of Atom
 """
+
 import numpy as np
+
 
 class Atom(object):
     """
