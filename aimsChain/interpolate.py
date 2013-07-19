@@ -45,6 +45,9 @@ def spline_pos(positions, new_t, old_t=None, k = 3, derv = 0):
     """
     import numpy as np
     from scipy import interpolate
+    
+    if len(positions) <= 3:
+        k = len(positions) - 1
 
     positions = np.array(positions)
     if old_t == None:
@@ -140,12 +143,13 @@ def get_t(positions):
     t=[]
     current_t = 0.
     total_t = [0]
+
     for i in range(len(positions))[1:]:
         diff = positions[i] - positions[i-1]
         current_t += np.linalg.norm(diff)
         total_t.append(current_t)
     for i in total_t:
-       t.append(i/total_t[-1])
+        t.append(i/total_t[-1])
     return np.array(t)
         
     

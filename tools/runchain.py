@@ -222,7 +222,7 @@ if restart_stage == 0:
         if force > control.thres:
             path.add_runs()
             path_to_run = path.write_node()
-        forcelog.write('iteration%04d\t%16.16f \n' % (curr_runs,force))
+        forcelog.write('iteration%04d\t%16.10f\n' % (curr_runs,force))
         forcelog.flush()
         path.write_path("iterations/path.dat")
     force = 10.0

@@ -178,8 +178,7 @@ class Control(object):
 
 def parse_bool(string):
 
-    if string in ['true','True','.true.', 'Y', 'Yes', 'YES'
-                  'TRUE', 'y', 'yes', '1', 't', 'T', 'on', 'On', 'ON']:
+    if string.lower() in ['true','.true.', 'y', 'yes', '1', 't','on']:
         return True
     else:
         return False
