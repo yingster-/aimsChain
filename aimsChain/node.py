@@ -126,6 +126,8 @@ class Node(object):
     def normal_forces(self):
         if self.fixed:
             return np.zeros(np.shape(self.geometry.forces))
+        elif self.prev == None or self.next == None:
+            return self.forces
         forces = self.forces
         tangent = self.get_tangent()
         forces -= vproj(forces, tangent)
@@ -136,6 +138,8 @@ class Node(object):
 	k = self.control.spring_k
         if self.fixed:
             return np.zeros(np.shape(self.positions))
+        elif self.prev==None or self.next==None:
+            return self.forces
         forces = self.normal_forces
         tangent = self.get_tangent()
         tan1 = self.next.positions - self.positions

@@ -36,19 +36,20 @@ class StringPath(Path):
         positions = np.array(positions)
         if self.control.global_opt:
             save = os.path.join(self.nodes[0].dir_pre, "path.opt")
-            new_pos = self.g_opt(
+            new_pos,opt = self.g_opt(
                 self.control.optimizer,
                 positions,
                 forces,
                 save)
         else:
-            new_pos = nong_opt(
+            new_pos,opt = self.nong_opt(
                 self.control.optimizer,
                 self.nodes,
                 positions,
                 forces,
                 ".opt")
-        if isinstance(opt, FDOptimize) and opt.finitie_diff:
+
+        if not (isinstance(opt, FDOptimize) and  opt.finite_diff):
             new_pos = spline_pos(new_pos, new_t)
         for i,position in enumerate(new_pos):
             self.nodes[i].positions = position

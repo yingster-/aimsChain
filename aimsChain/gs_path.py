@@ -5,7 +5,7 @@ import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
 from aimsChain.path import Path, get_optimizer
 from aimsChain.node import Node
-
+from aimsChain.optimizer.optimize import FDOptimize
 class GrowingStringPath(Path):
 
     def __init__(self, 
@@ -192,15 +192,12 @@ class GrowingStringPath(Path):
         positions = np.array(positions)
         
 
-        for i,node in enumerate(self.nodes):
-            save = "%.4f.opt" % node.param
-            save = os.path.join(node.dir_pre, save)
-            opt = get_optimizer(self.control, "fire", save)
-            opt.initialize()
-            opt.load()
-            new_pos.append(opt.step(positions[i],
-                                    forces[i]))
-            opt.dump()
+        new_pos,opt = self.nong_opt(
+            self.control.optimizer,
+            self.nodes,
+            positions,
+            forces,
+            ".gs.opt")
 
         lower_length = get_total_length(new_pos[:self.lower_end+1])
         upper_length = get_total_length(new_pos[self.upper_end:])
@@ -212,7 +209,9 @@ class GrowingStringPath(Path):
                             (total_length*self.lower.param)/lower_length,
                             len(temp_pos))
         
-        if isinstance(opt, FDOptimize) and opt.finitie_diff:
+
+        
+        if not (isinstance(opt, FDOptimize) and opt.finite_diff):
             temp_pos = spline_pos(temp_pos, new_t, old_t)
         new_pos2.extend(temp_pos)
 
@@ -222,8 +221,17 @@ class GrowingStringPath(Path):
                             0,
                             len(temp_pos))
 
-        if isinstance(opt, FDOptimize) and opt.finitie_diff:
+#        log = open("logfile",'a')
+        
+#        log.write(str(isinstance(opt,FDOptimize))+'\n')
+#        if (not isinstance(opt, FDOptimize)) or opt.finite_diff:
+#            log.write("reparamet\n")
+        if (not isinstance(opt, FDOptimize)) or opt.finite_diff:
             temp_pos = spline_pos(temp_pos, new_t, old_t)
+#        else:
+#            log.write("noreparamet\n")
+
+ #       log.close()
         new_pos2.extend(temp_pos)
 
 
@@ -254,18 +262,19 @@ class GrowingStringPath(Path):
         forces = np.array(forces)
         positions = np.array(positions)
         
-        for i,node in enumerate(self.nodes):
-            save = "%.4f.opt" % node.param
-            save = os.path.join(node.dir_pre, save)
-            opt = get_optimizer(self.control, "fire", save)
-            opt.initialize()
-            opt.load()
-            new_pos.append(opt.step(positions[i],
-                                    forces[i]))
-            opt.dump()
-
-        if isinstance(opt, FDOptimize) and opt.finitie_diff:
+        new_pos,opt = self.nong_opt(
+            self.control.optimizer,
+            self.nodes,
+            positions,
+            forces,
+            ".gs.opt")
+#        log = open("logfile",'w')
+        if not (isinstance(opt, FDOptimize) and opt.finite_diff):
+#            log.wirte("reparamet\n")
             new_pos = spline_pos(new_pos, new_t)
+#        else:
+#            log.write("no reparamet\n")
+#        log.close()
 
         for i,position in enumerate(new_pos):
             self.nodes[i].positions = position

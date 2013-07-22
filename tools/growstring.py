@@ -40,9 +40,11 @@ def initial_interpolation():
     global path
     #set the initial and final image
     ininode = Node(param = 0.0, 
-                   geometry = read_aims(control.ini))
+                   geometry = read_aims(control.ini),
+                   fixed=True)
     finnode = Node(param = 1.0,
-                   geometry = read_aims(control.fin))
+                   geometry = read_aims(control.fin),
+                   fixed=True)
     path.nodes = [ininode, finnode]
 
     path.add_lower()
@@ -141,7 +143,7 @@ if not is_restart:
     forcelog.write("Iteration\tResidual force\t\tLower end force\t\tUpper end force \n")
     forcelog.flush()
 
-while growing or (force > control.thres):
+while growing:
 
     run_aims(path_to_run)
     path.load_nodes()

@@ -30,7 +30,7 @@ class Path(object):
     @property
     def control(self):
         return self.__control
-    @propertys
+    @property
     def nodes(self):
         """get a list of all nodes in the path"""
         return self.__nodes
@@ -320,13 +320,13 @@ class Path(object):
             #move nodes, either by global or non-global optimizer
             if self.control.climb_global_opt:
                 save = os.path.join(moving_nodes[0].dir_pre, "climbing.opt")
-                new_pos = self.g_opt(
+                new_pos,opt = self.g_opt(
                     self.control.climb_optimizer,
                     positions,
                     forces,
                     save)
             else:
-                new_pos = self.nong_opt(
+                new_pos,opt = self.nong_opt(
                     self.control.climb_optimizer,
                     moving_nodes,
                     positions,
@@ -339,7 +339,9 @@ class Path(object):
                       * (moving_nodes[-1].param - moving_nodes[climb_ind].param) 
                       + moving_nodes[climb_ind].param)
             old_t = np.append(old_t, old_t2[1:])
-            if isinstance(opt, FDOptimize) and opt.finitie_diff:
+
+
+            if not (isinstance(opt, FDOptimize) and opt.finite_diff):
                 new_pos = spline_pos(new_pos, new_t, old_t = old_t)
             for i, position in enumerate(new_pos):
                 moving_nodes[i].positions = position
@@ -355,11 +357,13 @@ class Path(object):
         opt.load()
         new_pos = opt.step(positions, forces)
         opt.dump()
-        return new_pos
+        return new_pos,opt
     
     def nong_opt(self, opt_key, nodes, positions, forces, save_suffix):
         import os
         new_pos = []
+        ind = int(len(nodes)/2)
+        another_opt = None
         for i,node in enumerate(nodes):
             save = "%.4f" % node.param
             save += save_suffix
@@ -370,7 +374,9 @@ class Path(object):
             new_pos.append(opt.step(positions[i],
                                     forces[i]))
             opt.dump()
-        return new_pos
+            if i == ind:
+                another_opt = opt
+        return new_pos,another_opt
 
 
     def n_nodes(self):

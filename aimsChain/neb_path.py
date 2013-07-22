@@ -34,14 +34,14 @@ class NebPath(Path):
                 self.control.optimizer,
                 positions,
                 forces,
-                save)
+                save)[0]
         else:
-            new_pos = nong_opt(
+            new_pos = self.nong_opt(
                 self.control.optimizer,
                 self.nodes,
                 positions,
                 forces,
-                ".opt")
+                ".opt")[0]
 
 
         for i,pos in enumerate(new_pos):
@@ -85,14 +85,14 @@ class NebPath(Path):
                 self.control.climb_optimizer,
                 positions,
                 forces,
-                save)
+                save)[0]
         else:
             new_pos = self.nong_opt(
                 self.control.climb_optimizer,
                 moving_nodes,
                 positions,
                 forces,
-                ".climb.opt")
+                ".climb.opt")[0]
 
         for i, position in enumerate(new_pos):
             moving_nodes[i].positions = position
