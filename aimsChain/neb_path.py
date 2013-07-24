@@ -3,7 +3,7 @@ This module defines the NEB Path
 """
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
-from aimsChain.path import Path, get_optimizer
+from aimsChain.path import Path
 
 
 class NebPath(Path):

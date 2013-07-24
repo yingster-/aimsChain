@@ -62,7 +62,7 @@ class dampedBFGS(object):
         """
         r = np.array(r)
         f = np.array(f).flatten()
-
+            
         self.update(r, f)
 
         dr = self.H.dot(f)
@@ -97,12 +97,17 @@ class dampedBFGS(object):
         f = f.flatten()
         if self.H is None:
             self.H = np.eye(len(r)) * (1.0/self.alpha)
-            self.r0 = r
-            self.f0 = f
             return
 
         r0 = self.r0
         f0 = self.f0
+
+        a1 = abs(np.dot(f,f0))
+        a2 = np.dot(f0,f0)
+        if (a1 >= a2) or (a2 == 0.0):
+            self.H = np.eye(len(r)) * (1.0/self.alpha)
+            return
+
 
         sk = r.reshape(-1) - r0.reshape(-1)
 
@@ -123,9 +128,8 @@ class dampedBFGS(object):
         if rhok < thres:
             theta = (4*thres)/(5*thres-rhok)
 #            print "damped!"
-#            self.H = np.eye(len(r))*(0.1/self.alpha)
-            return
-        #yk =  theta * yk + (1 -theta)*np.dot(sk,self.H)
+#            return
+        yk =  theta * yk + (1 -theta)*np.dot(sk,self.H)
         #BFGS update formula
         I= np.eye(len(r))
         try:
@@ -134,6 +138,7 @@ class dampedBFGS(object):
             rhok = 1000.0
         if np.isinf(rhok) or float(rhok) >=1000:
             rhok = 1000.0
+
         A1 = I - sk[:,np.newaxis] * yk[np.newaxis,:] * rhok
         A2 = I - yk[:,np.newaxis] * sk[np.newaxis,:] * rhok
         

@@ -89,6 +89,7 @@ def initial_interpolation():
     except:
         print '!Error interprating the external geometries\n'
         print '!Using standard interpolation method for initial geometries\n'
+        raise
 
     #if there were no external geometry, linear interpolate the image
     if len(nodes) <= 2:

@@ -40,11 +40,38 @@ def initial_interpolation():
     global path
     #set the initial and final image
     ininode = Node(param = 0.0, 
-                   geometry = read_aims(control.ini),
-                   fixed=True)
+                   geometry = read_aims(control.ini))
     finnode = Node(param = 1.0,
-                   geometry = read_aims(control.fin),
-                   fixed=True)
+                   geometry = read_aims(control.fin))
+
+    #does periodic transformation between initial and final node
+    #minimize distance between initial and final image atom-wise
+    #maybe this should be moved to another file...runchain is getting too messy
+    #leave it like this for now
+    if control.periodic_interp and finnode.geometry.lattice != None:
+        lattice = finnode.geometry.lattice
+        initial_pos = ininode.positions
+        curr_pos = finnode.positions
+        fin_pos = []
+        for i,atom_pos in enumerate(curr_pos):
+            dis = 1000000
+            pos = None
+            for a in [-1,0,1]:
+                for b in [-1,0,1]:
+                    for c in [-1,0,1]:
+                        pos_tmp = (atom_pos +
+                                   a*lattice[0] + b*lattice[1] + c*lattice[2])
+                        dis_tmp = np.sum(np.array(pos_tmp - initial_pos[i])**2)**0.5
+                        if dis_tmp <= dis:
+                            pos = pos_tmp
+                            dis = dis_tmp
+            fin_pos.append(pos)
+
+        finnode.positions = fin_pos  
+
+    ininode.fixed = True
+    finnode.fixed = True
+
     path.nodes = [ininode, finnode]
 
     path.add_lower()
@@ -120,15 +147,16 @@ force = 10.0
 growing = True
 control = Control()
 path = GrowingStringPath(control=control)
-restart_stage = 0
-is_restart = read_restart() and control.restart
+restart_stage = "growing"
+is_restart = control.restart and read_restart()
 
 forcelog = open("growing_forces.log", 'a')
-
+if restart_stage != "growing":
+    growing = False
 
 
 if not is_restart:
-    for directory in ["paths", "iterations"]:
+    for directory in ["paths", "iterations", "grownstring"]:
         if os.path.isdir(directory):
             shutil.rmtree(directory)
     os.mkdir("paths")
@@ -147,27 +175,41 @@ while growing:
 
     run_aims(path_to_run)
     path.load_nodes()
-    force = path.move_nodes()
+    force,low_force,high_force = path.move_nodes()
     write_current()
     curr_runs = path.runs
 
-    if path.lower_residual() < control.thres:
+    if low_force < control.gs_thres:
         growing = path.add_lower() and growing
-    if path.upper_residual() < control.thres:
+    if high_force < control.gs_thres:
         growing = path.add_upper() and growing
 
-    if growing or (force > control.thres):
+    if growing:
         path.add_runs()
         path_to_run = path.write_node()
 
-    forcelog.write('iteration%04d\t%16.8f\t%16.8f\t%16.8f \n' % (curr_runs,force,path.lower_residual(), path.upper_residual()))
+    forcelog.write('iteration%04d\t%16.8f\t%16.8f\t%16.8f \n' % 
+                   (curr_runs,force,low_force, high_force))
     forcelog.flush()
     path.write_path("iterations/path.dat")
     
+
 
 force = 10.0
 forcelog.write("Path is grown.\n")
 
 forcelog.close()
+
+restart_stage = "grown"
 if control.restart:
     save_restart([])
+
+try:
+    os.mkdir('grownstring')
+except OSError:
+    pass
+
+for i,dir in enumerate(path.get_paths()):
+    i+=1
+    dir_util.copy_tree(dir, os.path.join('grownstring', "image%03d" % i))
+write_xyz("grownstring/path.xyz", path, control.xyz_lattice)

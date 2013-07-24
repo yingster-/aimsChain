@@ -2,6 +2,7 @@
 
 import subprocess
 import os
+import sys
 import distutils.dir_util as dir_util
 import shutil
 import numpy as np
@@ -108,9 +109,11 @@ def initial_interpolation():
                 path.interpolate(control.nimage)
 
     except:
+
         print '!Error interprating the external geometries\n'
         print '!Using standard interpolation method for initial geometries\n'
         nodes = [ininode, finnode]
+
 
     #if there were no external geometry, linear interpolate the image
     if len(nodes) <= 2:
@@ -189,8 +192,8 @@ if control.method == "neb":
     path = NebPath(control=control)
 else:
     path = StringPath(control=control)
-restart_stage = 0
-is_restart = read_restart() and control.restart
+restart_stage = "mep"
+is_restart = control.restart and read_restart() 
 
 
 forcelog = open("forces.log", 'a')
@@ -211,8 +214,15 @@ if not is_restart:
 
     forcelog.write("#Residual Forces in the system:\n")
     forcelog.flush()
+elif restart_stage == "grown" and control.restart:
+    restart_stage = "mep"
+    if control.resample and control.nimage != (len(path.nodes)-2):
+        path.interpolate(control.nimage)
+        path_to_run = path.write_all_node()
+elif restart_stage == "growing" and control.restart:
+    sys.exit()
 
-if restart_stage == 0:
+if restart_stage == "mep":
     while force > control.thres:
         run_aims(path_to_run)
         path.load_nodes()
@@ -232,7 +242,7 @@ forcelog.close()
 
 if control.use_climb:
     forcelog = open("climbing_forces.log", 'a')
-    if restart_stage != 1:
+    if restart_stage != "CI":
         path.find_climb()
         path.add_runs()
         if control.climb_control != "control.in":
@@ -242,7 +252,7 @@ if control.use_climb:
 
         forcelog.write("#Residual Forces in the Climbing image:\n")
         forcelog.flush()
-        restart_stage = 1
+        restart_stage = "CI"
 
 
     while force > control.climb_thres:

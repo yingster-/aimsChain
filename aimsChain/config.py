@@ -15,10 +15,14 @@ class Control(object):
         self.fin = "fin.in"
         #number of images using
         self.nimage = 5
+        #number of gs images using
+        self.gs_nimage = None
         #periodic interpolation
         self.periodic_interp = False
         #threshold for convergence
         self.thres = 0.1
+        #threshold for convergence
+        self.gs_thres = None
         #threshold for climbing image convergence
         self.climb_thres = None
         #climbing image or not
@@ -50,6 +54,8 @@ class Control(object):
         self.restart = False
         #optimizer for evolving path
         self.optimizer = "dampedBFGS"
+        #optimizer for evolving path
+        self.gs_optimizer = "fire"
         #optimizer for climbing image
         self.climb_optimizer = "dampedBFGS"
         #control file for climbing image
@@ -95,10 +101,14 @@ class Control(object):
                     self.fin = inp[1]
                 elif inp[0] == "n_images":
                     self.nimage = int(inp[1])
+                elif inp[0] == "gs_n_images":
+                    self.gs_nimage = int(inp[1])
                 elif inp[0] == "force_thres":
                     self.thres = float(inp[1])
                 elif inp[0] == "climb_thres":
                     self.climb_thres = float(inp[1])
+                elif inp[0] == "gs_thres":
+                    self.gs_thres = float(inp[1])
                 elif inp[0] == "use_climb":
                     self.use_climb = parse_bool(inp[1])
                 elif inp[0] == "climb_mode":
@@ -130,6 +140,8 @@ class Control(object):
                     self.climb_global_opt = parse_bool(inp[1])
                 elif inp[0] == "optimizer":
                     self.optimizer = str(inp[1])
+                elif inp[0] == "gs_optimizer":
+                    self.gs_optimizer = str(inp[1])
                 elif inp[0] == "climb_optimizer":
                     self.climb_optimizer = str(inp[1])
                 elif inp[0] == "climb_control":
@@ -173,8 +185,10 @@ class Control(object):
         #assign climbing thres if it's not set
         if self.climb_thres == None:
             self.climb_thres = self.thres
-
-
+        if self.gs_thres == None:
+            self.gs_thres = self.thres
+        if self.gs_nimage == None:
+            self.gs_nimage = self.nimage
 
 def parse_bool(string):
 

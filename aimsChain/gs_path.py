@@ -3,9 +3,10 @@ The growing string path
 """
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
-from aimsChain.path import Path, get_optimizer
+from aimsChain.path import Path
 from aimsChain.node import Node
 from aimsChain.optimizer.optimize import FDOptimize
+import cPickle as cp
 class GrowingStringPath(Path):
 
     def __init__(self, 
@@ -22,7 +23,7 @@ class GrowingStringPath(Path):
     @property
     def linsep(self):
 #        print "using " + str(self.control.nimage) + " images\n"
-        return 1.0/(self.control.nimage + 1)
+        return 1.0/(self.control.gs_nimage + 1)
 
     @property
     def params(self):
@@ -162,13 +163,13 @@ class GrowingStringPath(Path):
 
 
     def move_nodes(self):
-        forces = []
+        forces = None
         if (self.upper.param - self.lower.param) <= self.linsep*1.5:
-            forces.append(self.move_nodes_combined())
+            forces = self.move_nodes_combined()
         else:
-            forces.append(self.move_nodes_separated())
+            forces = self.move_nodes_separated()
 
-        return max(forces)
+        return forces
 
     def move_nodes_separated(self):
         from aimsChain.interpolate import spline_pos, get_total_length, get_t
@@ -179,12 +180,16 @@ class GrowingStringPath(Path):
         new_pos = []
         new_pos2= []
         total_length = 0
+        low_force = []
+        high_force = []
         for node in self.nodes:
             positions.append(node.positions)
             if node is self.upper:
                 forces.append(self.upper_force())
+                high_force = self.upper_force()
             elif node is self.lower:
                 forces.append(self.lower_force())
+                low_force = self.lower_force()
             else:
                 forces.append(node.normal_forces)
 
@@ -193,7 +198,7 @@ class GrowingStringPath(Path):
         
 
         new_pos,opt = self.nong_opt(
-            self.control.optimizer,
+            self.control.gs_optimizer,
             self.nodes,
             positions,
             forces,
@@ -239,9 +244,15 @@ class GrowingStringPath(Path):
             self.nodes[i].positions = position
 
 
+        high_force = np.reshape(high_force, (-1,3))
+        high_force = np.sum(high_force**2,1)**0.5
+
+        low_force = np.reshape(low_force, (-1,3))
+        low_force = np.sum(low_force**2,1)**0.5
+
         forces = np.reshape(forces, (-1,3))
         forces = np.sum(forces**2,1)**0.5
-        return np.nanmax(forces)
+        return np.nanmax(forces),np.nanmax(low_force),np.nanmax(high_force)
 
 
 
@@ -263,7 +274,7 @@ class GrowingStringPath(Path):
         positions = np.array(positions)
         
         new_pos,opt = self.nong_opt(
-            self.control.optimizer,
+            self.control.gs_optimizer,
             self.nodes,
             positions,
             forces,
@@ -283,3 +294,62 @@ class GrowingStringPath(Path):
         forces = np.reshape(forces, (-1,3))
         forces = np.sum(forces**2,1)**0.5
         return np.nanmax(forces)
+
+
+    def write_path(self, filename="path.dat"):
+        """
+        Write the current path into a file
+        Will contain:
+        current runs
+        each node's param, dir, and whether they are fixed or not
+        This was preferred over pickling for the sake of easy debugging
+        May change to pickling in the production level
+        """
+        data = {}
+        data["runs"] = self.runs
+        params = []
+        dirs = []
+        fix = []
+        climb = []
+        for node in self.nodes:
+            params.append(node.param)
+            dirs.append(node.dir)
+            fix.append(node.fixed)
+            climb.append(node.climb)
+
+        data["param"] = params
+        data["dirs"] = dirs
+        data["fix"] = fix
+        data["climb"] = climb
+        data["lower"] = self.lower_end
+
+        save = open(filename,'w')
+        cp.dump(data,save)
+        save.close()
+
+    def read_path(self, filename="path.dat"):
+        """
+        Read the file into current path
+        """
+        nodes = []
+        save = open(filename, 'r')
+        print 
+        data = cp.load(save)
+        save.close()
+
+        self.runs = data["runs"]
+        params = data["param"]
+        dirs = data["dirs"]
+        fix = data["fix"]
+        climb = data["climb"]
+        self.lower_end = data["lower"]
+
+        for i,param in enumerate(params):
+            tmp_node = Node(param, path=self)
+            tmp_node.dir = dirs[i]
+            tmp_node.fixed = fix[i]
+            tmp_node.climb = climb[i]
+            
+            nodes.append(tmp_node)
+    
+        self.nodes = nodes

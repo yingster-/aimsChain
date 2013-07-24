@@ -7,7 +7,8 @@ import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
 from aimsChain.config import Control
 from aimsChain.node import Node
-
+from aimsChain.optimizer.optimize import FDOptimize
+import cPickle as cp
 
 class Path(object):
     """
@@ -292,7 +293,7 @@ class Path(object):
             climb_force = node.climb_forces
             forces.append(climb_force)
 
-            opt = get_optimizer(self.control, self.control.climb_optimizer, save)
+            opt = self.get_optimizer(self.control.climb_optimizer, save)
             opt.initialize()
             opt.load()
             node.positions = opt.step(node.positions,
@@ -352,7 +353,7 @@ class Path(object):
         return np.nanmax(forces)
 
     def g_opt(self, opt_key, positions, forces, save):
-        opt = get_optimizer(self.control, opt_key, save)
+        opt = self.get_optimizer(opt_key, save)
         opt.initialize()
         opt.load()
         new_pos = opt.step(positions, forces)
@@ -368,7 +369,7 @@ class Path(object):
             save = "%.4f" % node.param
             save += save_suffix
             save = os.path.join(node.dir_pre, save)
-            opt = get_optimizer(self.control, opt_key, save)
+            opt = self.get_optimizer(opt_key, save)
             opt.initialize()
             opt.load()
             new_pos.append(opt.step(positions[i],
@@ -412,10 +413,10 @@ class Path(object):
                     old_t.remove(i)
             for node in self.nodes[1:-1]:
                 if node.param in old_t:
-                    self.nodes.remove[node]
+                    self.nodes.remove(node)
             
     
-    def write_path(self, file="path.dat"):
+    def write_path(self, filename="path.dat"):
         """
         Write the current path into a file
         Will contain:
@@ -424,54 +425,54 @@ class Path(object):
         This was preferred over pickling for the sake of easy debugging
         May change to pickling in the production level
         """
-        data = open(file, 'w')
-        data.write('#======================================#\n')
-        data.write('#=               Path Info            =#\n')
-        data.write('#======================================#\n')
-        data.write('%d\n' % self.runs)
+        data = {}
+        data["runs"] = self.runs
+        params = []
+        dirs = []
+        fix = []
+        climb = []
         for node in self.nodes:
-            data.write('Node\n')
-            data.write('%.8f\n' % node.param)
-            data.write(node.dir + '\n')
-            data.write('%d\n' % int(node.fixed))
-            data.write('%d\n' % int(node.climb))
-        
-        data.close()
-    def read_path(self, file="path.dat"):
+            params.append(node.param)
+            dirs.append(node.dir)
+            fix.append(node.fixed)
+            climb.append(node.climb)
+
+        data["param"] = params
+        data["dirs"] = dirs
+        data["fix"] = fix
+        data["climb"] = climb
+
+        save = open(filename,'w')
+        cp.dump(data,save)
+        save.close()
+
+    def read_path(self, filename="path.dat"):
         """
         Read the file into current path
         """
         nodes = []
-        data = open(file, 'r')
-        
-        while True:
-            line = data.readline().replace('\n','')
-            if not line:
-                break
-            if line.split()[0][0] == '#':
-                continue
-            else:
-                self.runs = int(float(line))
-                break
-    
-        while True:
-            line = data.readline().replace('\n','')
-            if not line:
-                break
-            if line.split()[0][0] == '#':
-                continue
-            elif 'Node' in line:
-                tmp_node = Node()
-                tmp_node.param = float(data.readline().replace('\n',''))
-                tmp_node.dir = data.readline().replace('\n','')
-                tmp_node.fixed = bool(int(float(data.readline().replace('\n',''))))
-                tmp_node.climb = bool(int(float(data.readline().replace('\n',''))))                
+        save = open(filename, 'r')
+        data = cp.load(save)
+        save.close()
 
-                nodes.append(tmp_node)
+        self.runs = data["runs"]
+        params = data["param"]
+        dirs = data["dirs"]
+        fix = data["fix"]
+        climb = data["climb"]
+
+        for i,param in enumerate(params):
+            tmp_node = Node(param, path=self)
+            tmp_node.dir = dirs[i]
+            tmp_node.fixed = fix[i]
+            tmp_node.climb = climb[i]
+            
+            nodes.append(tmp_node)
+    
         self.nodes = nodes
 
 
-def get_optimizer(control, key, data_name):
+    def get_optimizer(self, key, data_name):
         from aimsChain.optimizer.lbfgs import LBFGS
         from aimsChain.optimizer.newbfgs import BFGS
         from aimsChain.optimizer.dampedbfgs import dampedBFGS
@@ -481,29 +482,29 @@ def get_optimizer(control, key, data_name):
         opt = None
         if key.lower() == "lbfgs":
             opt = LBFGS(data_name, 
-                        maxstep=control.lbfgs_maxstep, 
-                        memory = control.lbfgs_memory, 
-                        alpha = control.lbfgs_alpha)
+                        maxstep=self.control.lbfgs_maxstep, 
+                        memory = self.control.lbfgs_memory, 
+                        alpha = self.control.lbfgs_alpha)
         elif key.lower() == "bfgs":
             opt = BFGS(data_name,
-                       maxstep = control.bfgs_maxstep,
-                       alpha = control.bfgs_alpha)
+                       maxstep = self.control.bfgs_maxstep,
+                       alpha = self.control.bfgs_alpha)
         elif key.lower() == "fire":
             opt = FIRE(data_name,
-                       dt = control.fire_dt,
-                       maxstep = control.fire_maxstep,
-                       dtmax = control.fire_dtmax,
-                       Nmin = control.fire_nmin,
-                       finc = control.fire_finc,
-                       fdec = control.fire_fdec,
-                       astart = control.fire_astart,
-                       fa = control.fire_fa,
-                       a = control.fire_a)
+                       dt = self.control.fire_dt,
+                       maxstep = self.control.fire_maxstep,
+                       dtmax = self.control.fire_dtmax,
+                       Nmin = self.control.fire_nmin,
+                       finc = self.control.fire_finc,
+                       fdec = self.control.fire_fdec,
+                       astart = self.control.fire_astart,
+                       fa = self.control.fire_fa,
+                       a = self.control.fire_a)
         elif key.lower() == "cg":
             opt = CG(data_name)
         else:
             opt = dampedBFGS(data_name,
-                             maxstep = control.bfgs_maxstep,
-                             alpha = control.bfgs_alpha)
+                             maxstep = self.control.bfgs_maxstep,
+                             alpha = self.control.bfgs_alpha)
         
         return opt

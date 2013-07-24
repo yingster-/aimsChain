@@ -3,7 +3,7 @@ This module defines the String Path
 """
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
-from aimsChain.path import Path, get_optimizer
+from aimsChain.path import Path
 from aimsChain.optimizer.optimize import FDOptimize
 class StringPath(Path):
 
