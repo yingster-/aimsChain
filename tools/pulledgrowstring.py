@@ -7,7 +7,7 @@ import shutil
 import numpy as np
 import cPickle as cp
 
-from aimsChain.gs_path import GrowingStringPath
+from aimsChain.pgs_path import PulledGrowingStringPath
 from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
 from aimsChain.config import Control
@@ -74,8 +74,7 @@ def initial_interpolation():
 
     path.nodes = [ininode, finnode]
 
-    path.add_lower()
-    path.add_upper()
+    path.init()
 
 
 def save_restart(path):
@@ -107,11 +106,16 @@ def write_current():
         os.mkdir(dir_name)
     except OSError:
         pass
+    moving = path.get_valid_index()
+    nodes = []
+    for i,node in enumerate(path.nodes):
+        if i in moving:
+            nodes.append(node)
     ener = []
     climb = []
     fixed = []
     write_xyz(os.path.join(dir_name, "path.xyz"), path, control.xyz_lattice)
-    for i,node in enumerate(path.nodes):
+    for i,node in enumerate(nodes):
         ener.append(node.ener)
         climb.append(node.climb)
         fixed.append(node.fixed)
@@ -132,7 +136,8 @@ def write_current():
         enerfile.write("\n")
     enerfile.close()
     pathfile = open(os.path.join(dir_name, "path.lst") ,'w')
-    for i,item in enumerate(path.get_paths()):
+    for i,node in enumerate(nodes):
+        item = os.path.join(node.dir_pre, node.dir)
         pathfile.write("image%03d\t%s" % (i+1,item))
         if climb[i]:
             pathfile.write("\t CLIMB")
@@ -146,14 +151,13 @@ def write_current():
 force = 10.0
 growing = True
 control = Control()
-path = GrowingStringPath(control=control)
+path = PulledGrowingStringPath(control=control)
 restart_stage = "growing"
 is_restart = control.restart and read_restart()
 
 forcelog = open("growing_forces.log", 'a')
 if restart_stage != "growing":
     growing = False
-
 
 if not is_restart:
     for directory in ["paths", "iterations", "grownstring"]:
@@ -165,13 +169,14 @@ if not is_restart:
     initial_interpolation()
 
     #write directory for images
-    path_to_run = path.write_all_node()
+    path_to_run = path.write_node(fixed=True)
     path.write_path("iterations/path.dat")
 
     forcelog.write("Iteration\tResidual force\t\tLower end force\t\tUpper end force \n")
     forcelog.flush()
 
 while growing:
+    
 
     run_aims(path_to_run)
     path.load_nodes()
@@ -180,9 +185,12 @@ while growing:
     curr_runs = path.runs
 
     if low_force < control.gs_thres:
-        growing = path.add_lower() and growing
+        path.add_lower()
     if high_force < control.gs_thres:
-        growing = path.add_upper() and growing
+        path.add_upper()
+
+    growing = path.not_converged()
+
 
     path.add_runs()
     path_to_run = path.write_node()
@@ -196,6 +204,7 @@ while growing:
 run_aims(path_to_run)
 write_current()
 path.write_path("iterations/path.dat")
+
 
 
 force = 10.0

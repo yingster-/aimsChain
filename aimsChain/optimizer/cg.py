@@ -44,6 +44,7 @@ class CG(FDOptimize):
                  self.N,
                  self.x0,
                  self.x0_prev,
+                 self.prev_step,
                  self.f_prime,
                  self.sec_dis,
                  self.finite_diff) = cp.load(hess)
@@ -64,6 +65,7 @@ class CG(FDOptimize):
                  self.N,
                  self.x0,
                  self.x0_prev,
+                 self.prev_step,
                  self.f_prime,
                  self.sec_dis,
                  self.finite_diff),
@@ -79,7 +81,7 @@ class CG(FDOptimize):
             return x #Too small to go on
 
         if self.N == None: #degree of freedom
-            self.N = int(len(f)*0.5+1) #threshold set for restarting
+            self.N = int(len(f)) #threshold set for restarting
         if self.d == None: #initial direction
             self.d = force
         if self.r_prev == None:
@@ -94,9 +96,13 @@ class CG(FDOptimize):
             self.r = force
             self.f_prime = force
             
+
+            prev_move = self.x0 - self.x0_prev
+            prev_move = np.reshape(prev_move, (-1,3))
+            prev_move = np.sum(prev_move**2,1)**0.5
             self.sec_dis = min(
                 self.determine_alpha(self.d,self.sec_step),
-                self.determine_alpha(self.d,vmag(self.x0-self.x0_prev))*0.1
+                self.determine_alpha(self.d,self.prev_step)*0.2
                 )
 
             dx = self.sec_dis*self.d
@@ -155,8 +161,8 @@ class CG(FDOptimize):
         
         self.x0_prev = self.x0
         #####
-
-        return self.x0 + dx
+        return np.array(x) + dx
+#        return self.x0 + dx
 
     def determine_alpha(self, f, step):
         """

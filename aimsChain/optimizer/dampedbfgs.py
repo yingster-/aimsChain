@@ -26,6 +26,7 @@ class dampedBFGS(object):
             self.maxstep = maxstep
         self.restart = restart
         self.alpha = alpha
+        self.save_hess = True
 
     def initialize(self):
         self.H = None
@@ -62,6 +63,9 @@ class dampedBFGS(object):
         """
         r = np.array(r)
         f = np.array(f).flatten()
+        
+        if (self.f0 != None) and len(self.f0) != len(f):
+            self.initialize()
             
         self.update(r, f)
 
@@ -74,6 +78,13 @@ class dampedBFGS(object):
         self.r0 = r.flatten()
         self.f0 = f.flatten()
 
+        if self.save_hess:
+            filename = self.restart + ".hess"
+            f_handle = open(filename, 'a')
+            np.savetxt(f_handle, self.H)
+#            f_handle = open(filename, 'a')
+            f_handle.write("\n\n")
+            f_handle.close()
 
         return r+dr
 
@@ -102,7 +113,7 @@ class dampedBFGS(object):
         r0 = self.r0
         f0 = self.f0
 
-        a1 = abs(np.dot(f,f0))
+        a1 = abs(np.dot(f,f))
         a2 = np.dot(f0,f0)
         if (a1 >= a2) or (a2 == 0.0):
             self.H = np.eye(len(r)) * (1.0/self.alpha)
@@ -134,6 +145,7 @@ class dampedBFGS(object):
         I= np.eye(len(r))
         try:
             rhok = 1.0/(np.dot(yk,sk))
+            print rhok
         except ZeroDivisionError:
             rhok = 1000.0
         if np.isinf(rhok) or float(rhok) >=1000:

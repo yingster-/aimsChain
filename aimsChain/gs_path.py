@@ -23,7 +23,7 @@ class GrowingStringPath(Path):
     @property
     def linsep(self):
 #        print "using " + str(self.control.nimage) + " images\n"
-        return 1.0/(self.control.gs_nimage + 1)
+        return 1.0/(self.control.gs_nimage + 3)
 
     @property
     def params(self):
@@ -45,31 +45,16 @@ class GrowingStringPath(Path):
         if ((self.upper.param - self.lower.param)
             <= self.linsep * 1.5):
             return False
-        if (self.n_nodes() < 4) or True:
-            self.insert_node(self.lower.param + self.linsep)
-            self.lower_end += 1
-            new_t = []
-            positions = []
-            for node in self.nodes:
-                new_t.append(node.param)
-                positions.append(node.positions)
-            positions = spline_pos(np.array(positions), new_t)
-            for i,pos in enumerate(positions):
-#                if i <= self.lower_end:
-                self.nodes[i].positions = pos
-            return True
-        diff = self.nodes[self.lower_end].positions - self.nodes[self.lower_end-1].positions
 
-        new_node = Node(param = self.lower.param + self.linsep,
-                        geometry = copy.deepcopy(self.nodes[0].geometry),
-                        path=self)
-        new_node.positions = self.lower.positions + diff
-        new_node.update_dir()
-
-        self.nodes = new_node
-
+        self.insert_node(self.lower.param + self.linsep)
         self.lower_end += 1
+
+        if ((self.upper.param - self.lower.param)
+            <= self.linsep * 1.5):
+            return False
+
         return True
+
         
     def add_upper(self):    
         import copy
@@ -77,40 +62,26 @@ class GrowingStringPath(Path):
         if ((self.upper.param - self.lower.param)
             <= self.linsep * 1.5):
             return False
-        if (self.n_nodes() < 4) or True:
-            self.insert_node(self.upper.param - self.linsep)
-            
-            new_t = []
-            positions = []
-            for node in self.nodes:
-                new_t.append(node.param)
-                positions.append(node.positions)
-            positions = spline_pos(np.array(positions), new_t)
-            for i,pos in enumerate(positions):
-#                if i >= self.upper_end:
-                self.nodes[i].positions = pos
-            return True
 
-        diff = self.nodes[self.upper_end+1].positions - self.nodes[self.upper_end].positions
-        new_node = Node(param = self.upper.param-self.linsep,
-                        geometry = copy.deepcopy(self.nodes[0].geometry),
-                        path=self)
-        new_node.positions = self.upper.positions - diff
-        new_node.update_dir()
+        self.insert_node(self.upper.param - self.linsep)
+        
+        if ((self.upper.param - self.lower.param)
+            <= self.linsep * 1.5):
+            return False
 
-        self.nodes = new_node
+
         return True
+
 
     def lower_tangent(self):
         from aimsChain.interpolate import spline_pos
         if (self.upper.param - self.lower.param) <= self.linsep*1.5:
             return self.lower.get_tangent()
         positions = []
-        param = []
+        param = self.params
         loc = self.lower_end
         for i in self.nodes:
             positions.append(i.positions)
-            param.append(i.param)
           
         derv = spline_pos(positions, param, param, 3, 1)[loc]
         tangent = derv
@@ -122,11 +93,10 @@ class GrowingStringPath(Path):
             return self.upper.get_tangent()
         from aimsChain.interpolate import spline_pos
         positions = []
-        param = []
+        param = self.params
         loc = self.upper_end
         for i in self.nodes:
             positions.append(i.positions)
-            param.append(i.param)
           
         derv = spline_pos(positions, param, param, 3, 1)[loc]
         tangent = derv
@@ -144,21 +114,6 @@ class GrowingStringPath(Path):
         tangent = self.upper_tangent()
         forces -= vproj(forces,tangent)
         return forces
-
-    def lower_residual(self):
-        forces = self.lower_force()
-        forces = np.reshape(forces, (-1,3))
-        forces = np.sum(forces**2,1)**0.5
-
-        return np.nanmax(forces)
-
-    def upper_residual(self):
-
-        forces = self.upper_force()
-        forces = np.reshape(forces, (-1,3))
-        forces = np.sum(forces**2,1)**0.5
-
-        return np.nanmax(forces)
 
 
 
@@ -180,16 +135,15 @@ class GrowingStringPath(Path):
         new_pos = []
         new_pos2= []
         total_length = 0
-        low_force = []
-        high_force = []
+        low_force = self.lower_force()
+        high_force = self.upper_force()
         for node in self.nodes:
             positions.append(node.positions)
+
             if node is self.upper:
                 forces.append(self.upper_force())
-                high_force = self.upper_force()
             elif node is self.lower:
                 forces.append(self.lower_force())
-                low_force = self.lower_force()
             else:
                 forces.append(node.normal_forces)
 
@@ -208,39 +162,52 @@ class GrowingStringPath(Path):
         upper_length = get_total_length(new_pos[self.upper_end:])
         total_length = get_total_length(new_pos)
 
-        temp_pos = new_pos[:self.lower_end+1]
-        old_t = get_t(temp_pos)
-        new_t = np.linspace(0.0,
-                            (total_length*self.lower.param)/lower_length,
-                            len(temp_pos))
-        
 
-        
-        if not (isinstance(opt, FDOptimize) and opt.finite_diff):
-            temp_pos = spline_pos(temp_pos, new_t, old_t)
-        new_pos2.extend(temp_pos)
-
-        temp_pos = new_pos[self.upper_end:]
-        old_t = get_t(temp_pos)-1
-        new_t = np.linspace(-1*(total_length*(1-self.upper.param))/upper_length,
-                            0,
-                            len(temp_pos))
-
-#        log = open("logfile",'a')
-        
-#        log.write(str(isinstance(opt,FDOptimize))+'\n')
-#        if (not isinstance(opt, FDOptimize)) or opt.finite_diff:
-#            log.write("reparamet\n")
-        if (not isinstance(opt, FDOptimize)) or opt.finite_diff:
-            temp_pos = spline_pos(temp_pos, new_t, old_t)
-#        else:
-#            log.write("noreparamet\n")
-
- #       log.close()
-        new_pos2.extend(temp_pos)
+        #decide whether to reparm locally or globally
+        lower_ideal = self.lower.param*total_length
+        upper_ideal = total_length - self.upper.param*total_length
 
 
-        for i,position in enumerate(new_pos):
+#        log = open("opt.log",'a')
+#        log.write("---" + str(self.runs) + "---\n")
+        if (abs(lower_length-lower_ideal) > 0.1*lower_ideal or 
+            abs(upper_length - upper_ideal) > 0.1 * upper_ideal):
+            if not (isinstance(opt, FDOptimize) and opt.finite_diff):
+#                log.write("Whole reparam, finite_diff at " + str(opt.finite_diff) + '\n')
+                new_pos2 = spline_pos(np.array(new_pos), self.params)
+            else:
+#                log.write("No whole reparam, finite_diff at " + str(opt.finite_diff) + '\n')
+                new_pos2 = new_pos
+
+            
+        else:
+            temp_pos = new_pos[:self.lower_end+1]
+            old_t = get_t(temp_pos)
+            new_t = np.linspace(0.0,1.0,len(temp_pos))
+            
+            if not (isinstance(opt, FDOptimize) and opt.finite_diff):
+#                log.write("Lower reparam, finite_diff at " + str(opt.finite_diff) + '\n')
+                temp_pos = spline_pos(temp_pos, new_t, old_t)
+            else:
+#                log.write("No lower reparam, finite_diff at " + str(opt.finite_diff) + '\n')
+                pass
+            new_pos2.extend(temp_pos)
+
+            temp_pos = new_pos[self.upper_end:]
+            old_t = get_t(temp_pos)
+            new_t = np.linspace(0.0,1.0,len(temp_pos))
+            
+            if not (isinstance(opt, FDOptimize) and opt.finite_diff):
+#                log.write("Upper reparam, finite_diff at " + str(opt.finite_diff) + '\n')
+                temp_pos = spline_pos(temp_pos, new_t, old_t)
+            else:
+#                log.write("No upper reparam, finite_diff at " + str(opt.finite_diff) + '\n')                
+                pass
+            new_pos2.extend(temp_pos)
+#        log.close()
+
+
+        for i,position in enumerate(new_pos2):
             self.nodes[i].positions = position
 
 
@@ -265,8 +232,10 @@ class GrowingStringPath(Path):
         forces = []
         new_t = self.params
         new_pos = []
+        low_force = self.lower_force()
+        high_force = self.upper_force()
 
-        for node in self.nodes:
+        for i,node in enumerate(self.nodes):
             positions.append(node.positions)
             forces.append(node.normal_forces)
 
@@ -291,9 +260,18 @@ class GrowingStringPath(Path):
             self.nodes[i].positions = position
 
 
+
+        
+        high_force = np.reshape(high_force, (-1,3))
+        high_force = np.sum(high_force**2,1)**0.5
+
+        low_force = np.reshape(low_force, (-1,3))
+        low_force = np.sum(low_force**2,1)**0.5
+
         forces = np.reshape(forces, (-1,3))
         forces = np.sum(forces**2,1)**0.5
-        return np.nanmax(forces)
+        return np.nanmax(forces),np.nanmax(low_force),np.nanmax(high_force)
+
 
 
     def write_path(self, filename="path.dat"):

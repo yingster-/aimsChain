@@ -33,7 +33,8 @@ class Atom(object):
     @positions.setter
     def positions(self, positions):
         """set positions"""
-        self.__positions = np.array(positions)
+        self.__positions = self.__positions * np.abs(np.array(self.constraint - 1))
+        self.__positions = self.__positions +  np.array(positions) * self.constraint 
         
     @property
     def forces(self):

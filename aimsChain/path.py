@@ -138,9 +138,6 @@ class Path(object):
         from aimsChain.interpolate import spline_pos
         import copy
         
-        k = 3
-        if self.n_nodes() <= 3:
-            k = self.n_nodes() - 1
         
         positions = []
         old_t = []
@@ -152,8 +149,7 @@ class Path(object):
         new_t.append(float(param))
         new_t.sort()
         ind = new_t.index(param)
-
-        positions = spline_pos(np.array(positions), new_t, old_t, k=k)
+        positions = spline_pos(np.array(positions), new_t, old_t)
 
         new_node = Node(param = param,
                         geometry = copy.deepcopy(self.nodes[0].geometry),
@@ -232,7 +228,9 @@ class Path(object):
 
         #just go for the highest energy if we are not interpolating
         #or it's returning seek
+
         if (self.control.climb_interp == False) or returning:
+
             ind = energy.index(np.nanmax(energy[1:-1]))
             self.nodes[ind].fixed = False
             self.nodes[ind].climb = True
@@ -243,16 +241,16 @@ class Path(object):
             ind = np.where(energy_interp == np.nanmax(energy_interp[1:-1]))[0][0]
             #we want to see if the highest energy point is near a existing node
             change_t = old_t - new_t[ind]
-            mint_ind = np.where(change_t == np.nanmin(np.absolute(change_t)))[0][0]
+            mint_ind = np.where(np.absolute(change_t) == np.nanmin(np.absolute(change_t)))[0][0]
             
             if(change_t[mint_ind] <= 0):
                 t_thres = old_t[mint_ind+1] - old_t[mint_ind]
             else:
                 t_thres = old_t[mint_ind] - old_t[mint_ind-1]
-            t_thres = t_thres/4.0
+            t_thres = t_thres/5.0
             #if it's not within the center 1/2 of the path, then we say it's too close
             #to a existing node, and we use that instead
-            if np.nanmin(change_t) < t_thres:
+            if np.nanmin(np.absolute(change_t)) < t_thres:
                 self.nodes[mint_ind].fixed = False
                 self.nodes[mint_ind].climb = True
                 target_node = self.nodes[mint_ind]
@@ -263,7 +261,6 @@ class Path(object):
                 new_node.fixed = False
                 new_node.ener = np.nanmax(energy_interp[1:-1])
                 target_node = new_node
-                self.nodes = new_node
         if climb_mode == 2:
             target_node.prev.fixed = False
             target_node.next.fixed = False
@@ -281,7 +278,7 @@ class Path(object):
         positions = []
         climb_mode = self.control.climb_mode
         if climb_mode == 3:
-            self.find_climb()
+            self.find_climb(True)
         for node in self.nodes:
             if not node.fixed:
                 moving_nodes.append(node)

@@ -73,7 +73,6 @@ class NebPath(Path):
         for i,node in enumerate(moving_nodes):
             forces.append(node.climb_forces)
             positions.append(node.positions)
-            new_t.append(node.param)
 
         forces = np.array(forces)
         positions = np.array(positions)

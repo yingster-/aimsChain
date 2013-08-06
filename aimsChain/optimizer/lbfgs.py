@@ -91,6 +91,7 @@ class LBFGS(object):
         cp.dump((self.iteration, self.s, self.y, 
                    self.rho, self.r0, self.f0), hess)
         hess.close()
+
     def step(self, r, f):
         """Take a single step
         
@@ -196,6 +197,17 @@ class LBFGS(object):
                 r0 = self.r0
                 f0 = self.f0
 
+        #reset direction
+        if self.iteration > 0:
+            a1 = abs(np.dot(f.reshape(-1),f0.reshape(-1)))
+            a2 = np.dot(f0.reshape(-1),f0.reshape(-1))
+
+            if (a1 >= 0.5*a2) or (a2 == 0.0):
+                self.y = []
+                self.s = []
+                self.rho = []
+                self.iteration = 0
+        
         if self.iteration > 0:
             s0 = r.reshape(-1) - r0.reshape(-1)
             if np.abs(s0).max() < 1e-7:
@@ -207,10 +219,9 @@ class LBFGS(object):
             rho0 = 1.0 / np.dot(y0, s0)
             
 
-            if rho0 >= 0:
-                self.y.append(y0)
-                self.s.append(s0)
-                self.rho.append(rho0)
+            self.y.append(y0)
+            self.s.append(s0)
+            self.rho.append(rho0)
 
         if len(self.y) > self.memory:
             self.s.pop(0)

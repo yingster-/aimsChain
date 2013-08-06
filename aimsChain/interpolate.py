@@ -145,8 +145,9 @@ def get_t(positions):
     total_t = [0]
 
     for i in range(len(positions))[1:]:
-        diff = positions[i] - positions[i-1]
-        current_t += np.linalg.norm(diff)
+        diff = np.reshape(positions[i],(-1,3)) -np.reshape(positions[i-1],(-1,3))
+        diff = np.sum(diff**2,1)**0.5
+        current_t += np.sum(diff)
         total_t.append(current_t)
     for i in total_t:
         t.append(i/total_t[-1])
@@ -165,8 +166,9 @@ def get_total_length(positions):
     length = 0
     positions = np.array(positions)
     for i in range(len(positions))[1:]:
-        diff = positions[i] - positions[i-1]
-        length += np.linalg.norm(diff)
+        diff = np.reshape(positions[i],(-1,3)) -np.reshape(positions[i-1],(-1,3))
+        diff = np.sum(diff**2,1)**0.5
+        length += np.sum(diff)
     return length
         
     
