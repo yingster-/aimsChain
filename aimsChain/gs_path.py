@@ -6,6 +6,7 @@ from aimsChain.utility import vmag, vunit, vproj
 from aimsChain.path import Path
 from aimsChain.node import Node
 from aimsChain.optimizer.optimize import FDOptimize
+
 import cPickle as cp
 class GrowingStringPath(Path):
 
@@ -23,7 +24,7 @@ class GrowingStringPath(Path):
     @property
     def linsep(self):
 #        print "using " + str(self.control.nimage) + " images\n"
-        return 1.0/(self.control.gs_nimage + 3)
+        return 1.0/(self.control.gs_nimage + 1)
 
     @property
     def params(self):
@@ -42,12 +43,22 @@ class GrowingStringPath(Path):
     def add_lower(self):
         from aimsChain.interpolate import spline_pos
         import copy
+        import os
         if ((self.upper.param - self.lower.param)
             <= self.linsep * 1.5):
             return False
 
         self.insert_node(self.lower.param + self.linsep)
         self.lower_end += 1
+
+        if self.control.gs_global_optimizer:
+            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+            opt = self.get_optimizer("dampedBFGS", save)
+            opt.initialize()
+            opt.load()
+            opt.insert_node(self.lower_end, #loc to insert
+                            len(self.nodes[0].geometry.atoms)) #num of atoms
+
 
         if ((self.upper.param - self.lower.param)
             <= self.linsep * 1.5):
@@ -58,6 +69,7 @@ class GrowingStringPath(Path):
         
     def add_upper(self):    
         import copy
+        import os
         from aimsChain.interpolate import spline_pos
         if ((self.upper.param - self.lower.param)
             <= self.linsep * 1.5):
@@ -69,6 +81,14 @@ class GrowingStringPath(Path):
             <= self.linsep * 1.5):
             return False
 
+        if self.control.gs_global_optimizer:
+            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+            opt = self.get_optimizer("dampedBFGS", save)
+            opt.initialize()
+            opt.load()
+            opt.insert_node(self.lower_end, #loc to insert
+                            len(self.nodes[0].geometry.atoms)) #num of atoms
+        
 
         return True
 
@@ -150,13 +170,20 @@ class GrowingStringPath(Path):
         forces = np.array(forces)
         positions = np.array(positions)
         
-
-        new_pos,opt = self.nong_opt(
-            self.control.gs_optimizer,
-            self.nodes,
+        if self.control.gs_global_optimizer:
+            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+            new_pos,opt = self.g_opt(
+                "dampedBFGS",
+                positions,
+                forces,
+                save)
+        else:
+            new_pos,opt = self.nong_opt(
+                self.control.gs_optimizer,
+                self.nodes,
             positions,
-            forces,
-            ".gs.opt")
+                forces,
+                ".gs.opt")
 
         lower_length = get_total_length(new_pos[:self.lower_end+1])
         upper_length = get_total_length(new_pos[self.upper_end:])
@@ -168,15 +195,11 @@ class GrowingStringPath(Path):
         upper_ideal = total_length - self.upper.param*total_length
 
 
-#        log = open("opt.log",'a')
-#        log.write("---" + str(self.runs) + "---\n")
         if (abs(lower_length-lower_ideal) > 0.1*lower_ideal or 
             abs(upper_length - upper_ideal) > 0.1 * upper_ideal):
             if not (isinstance(opt, FDOptimize) and opt.finite_diff):
-#                log.write("Whole reparam, finite_diff at " + str(opt.finite_diff) + '\n')
                 new_pos2 = spline_pos(np.array(new_pos), self.params)
             else:
-#                log.write("No whole reparam, finite_diff at " + str(opt.finite_diff) + '\n')
                 new_pos2 = new_pos
 
             
@@ -241,20 +264,25 @@ class GrowingStringPath(Path):
 
         forces = np.array(forces)
         positions = np.array(positions)
-        
-        new_pos,opt = self.nong_opt(
-            self.control.gs_optimizer,
-            self.nodes,
-            positions,
-            forces,
-            ".gs.opt")
-#        log = open("logfile",'w')
+        if self.control.gs_global_optimizer:
+            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+            new_pos,opt = self.g_opt(
+                "dampedBFGS",
+                positions,
+                forces,
+                save)
+
+        else:
+            new_pos,opt = self.nong_opt(
+                self.control.gs_optimizer,
+                self.nodes,
+                positions,
+                forces,
+                ".gs.opt")
+
         if not (isinstance(opt, FDOptimize) and opt.finite_diff):
-#            log.wirte("reparamet\n")
             new_pos = spline_pos(new_pos, new_t)
-#        else:
-#            log.write("no reparamet\n")
-#        log.close()
+
 
         for i,position in enumerate(new_pos):
             self.nodes[i].positions = position

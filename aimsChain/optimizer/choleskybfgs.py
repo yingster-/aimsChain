@@ -3,7 +3,7 @@ from numpy.linalg import eigh, solve
 
 import cPickle as cp
 
-class dampedBFGS(object):
+class choleskyBFGS(object):
     def __init__(self, restart="hess", maxstep=0.04, 
                  alpha = 70):
         """BFGS optimizer.while force > 0.01:
@@ -33,7 +33,7 @@ class dampedBFGS(object):
         if not self.writelog:
             return
         log = open('bfgs.log','a')
-        log.write("Iteration[%04d]: " % self.iteration)
+        log.write("CholeskyIteration[%04d]: " % self.iteration)
         log.write(str_in + '\n')
         log.close()
 
@@ -57,7 +57,7 @@ class dampedBFGS(object):
         for _ in range(int(n_atoms*3)):
             H = np.insert(H,loc,0,axis=1)
         new_n = len(H)
-        I = np.eye(new_n) * (np.average(np.diagonal(self.H)))
+        I = np.eye(new_n) * (self.alpha)
 
         for i in range(new_n):
             for j in range(new_n):
@@ -67,7 +67,6 @@ class dampedBFGS(object):
         self.inserted_counter = 0
         self.H = H
         self.dump()
-
             
 
     def load(self):
@@ -95,18 +94,23 @@ class dampedBFGS(object):
         hess.close()
 
     def step(self, r, f):
+        import time
+        self.log("steping the nodes")
+        start_t = time.time()
         """
         Tkae a single step
         """
         r = np.array(r)
         f = np.array(f).flatten()
-
-
-
+        
         if (self.f0 == None) or len(self.f0) == len(f):
             self.update(r, f)
 
-        dr = self.H.dot(f)
+        chole = np.linalg.cholesky(self.H)
+        tempy = np.linalg.solve(chole, f)
+        dr = np.linalg.solve(chole.T.conj(),tempy)
+            
+#        dr = np.linalg.solve(self.H,f)
 
         dr = dr.reshape(-1,3)
         dr = self.determine_step(dr)
@@ -115,12 +119,15 @@ class dampedBFGS(object):
         self.r0 = r.flatten()
         self.f0 = f.flatten()
 
+        finish_t = time.time() - start_t
+        self.log("Used " + str(finish_t) + " seconds in steping")
         if self.save_hess:
             filename = self.restart + ".hess"
             f_handle = open(filename, 'a')
             np.savetxt(f_handle, self.H)
             f_handle.write("\n\n")
             f_handle.close()
+        
 
         return r+dr
 
@@ -140,16 +147,12 @@ class dampedBFGS(object):
 
     def update(self, r, f):
         self.iteration += 1
-        self.log("steping the nodes")
-        if self.inserted:
-            self.inserted = False
-            return
         self.inserted_counter += 1
         r = r.flatten()
         f = f.flatten()
 
         if self.H is None:
-            self.H = np.eye(len(r)) * (1.0/self.alpha)
+            self.H = np.eye(len(r)) * self.alpha
             return
 
         r0 = self.r0
@@ -160,36 +163,20 @@ class dampedBFGS(object):
         a2 = np.dot(f0,f0)
         if ((a1 >= a2) or (a2 == 0.0)) and (self.inserted_counter > 2):
             self.log("resetting the hessian")
-            self.H = np.eye(len(r)) * (1.0/self.alpha)
+            self.H = np.eye(len(r)) * (self.alpha) * 0.5
             return
 
 
         sk = r.reshape(-1) - r0.reshape(-1)
+        yk = f0.reshape(-1) - f.reshape(-1) #force is negative
+        rhok=np.dot(yk,sk)
 
         if np.abs(sk).max() < 1e-7:
             # Same configuration again (maybe a restart):
             return
-
-        #force is negative!
-        
-        yk = f0.reshape(-1) - f.reshape(-1)
-        rhok=np.dot(yk,sk)
-        
-        theta = 1
-        thres = np.dot(sk,self.H).dot(sk)
-        
-#        if rhok <= 0:
-#            return
-
-        if rhok < 0.0:
-            self.log("damped")
-            return 
-#            theta = (0.8*thres)/(thres-rhok)
-
-#        yk =  theta * yk + (1 -theta)*np.dot(self.H,sk)
-#        rhok = np.dot(yk,sk)
-
-
+        #local curvature is convex
+        if rhok <= 0:
+            return
 
         #BFGS update formula
         try:
@@ -202,9 +189,11 @@ class dampedBFGS(object):
             rhok = 1e5
 
         I= np.eye(len(r))
-        A1 = I - sk[:,np.newaxis] * yk[np.newaxis,:] * rhok
-        A2 = I - yk[:,np.newaxis] * sk[np.newaxis,:] * rhok
+
+
+        tk = np.dot(self.H,sk)
         
-        self.H = (np.dot(A1,np.dot(self.H,A2)) 
-                  + rhok * np.outer(sk,sk))
+        
+        self.H = (self.H + np.outer(yk,yk)*rhok 
+                  - np.outer(tk,tk)/np.dot(sk,tk))
         

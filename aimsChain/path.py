@@ -473,6 +473,7 @@ class Path(object):
         from aimsChain.optimizer.lbfgs import LBFGS
         from aimsChain.optimizer.newbfgs import BFGS
         from aimsChain.optimizer.dampedbfgs import dampedBFGS
+        from aimsChain.optimizer.choleskybfgs import choleskyBFGS
         from aimsChain.optimizer.fire import FIRE
         from aimsChain.optimizer.cg import CG
 
@@ -499,6 +500,11 @@ class Path(object):
                        a = self.control.fire_a)
         elif key.lower() == "cg":
             opt = CG(data_name)
+#        elif key.lower() == "choleskybfgs":
+#            opt = choleskyBFGS(data_name,
+#                             maxstep = self.control.bfgs_maxstep,
+#                             alpha = self.control.bfgs_alpha)
+
         else:
             opt = dampedBFGS(data_name,
                              maxstep = self.control.bfgs_maxstep,
