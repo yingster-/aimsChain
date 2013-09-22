@@ -156,7 +156,7 @@ class dampedBFGS(object):
         f0 = self.f0
 
 
-        a1 = abs(np.dot(f,f0))
+        a1 = abs(np.dot(f,f))
         a2 = np.dot(f0,f0)
         if ((a1 >= a2) or (a2 == 0.0)) and (self.inserted_counter > 2):
             self.log("resetting the hessian")
