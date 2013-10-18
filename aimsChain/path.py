@@ -476,6 +476,7 @@ class Path(object):
         from aimsChain.optimizer.choleskybfgs import choleskyBFGS
         from aimsChain.optimizer.fire import FIRE
         from aimsChain.optimizer.cg import CG
+        from aimsChain.optimizer.trmbfgs import trm
 
         opt = None
         if key.lower() == "lbfgs":
@@ -487,6 +488,11 @@ class Path(object):
             opt = BFGS(data_name,
                        maxstep = self.control.bfgs_maxstep,
                        alpha = self.control.bfgs_alpha)
+        elif key.lower() == "trm":
+            opt = trm(data_name,
+                       maxstep = self.control.bfgs_maxstep,
+                       alpha = self.control.bfgs_alpha)
+
         elif key.lower() == "fire":
             opt = FIRE(data_name,
                        dt = self.control.fire_dt,
