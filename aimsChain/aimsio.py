@@ -180,12 +180,12 @@ def read_aims_output(filename):
         line = output.readline()
         if not line:
             break
-        if "Number of atoms" in line:
+        if "| Number of atoms                   :" in line:
             inp = line.split()
             n_atoms = int(inp[5])
-        if "Total energy corrected" in line:
+        if "| Total energy corrected        :" in line:
             ener = float(line.split()[5])
-        if "Total atomic forces" in line:
+        if "Total atomic forces (unitary forces cleaned)" in line:
             for i in range(n_atoms):
                 inp = output.readline().split()
                 forces.append([float(inp[2]), float(inp[3]), float(inp[4])])

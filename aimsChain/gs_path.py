@@ -51,13 +51,13 @@ class GrowingStringPath(Path):
         self.insert_node(self.lower.param + self.linsep)
         self.lower_end += 1
 
-        if self.control.gs_global_optimizer:
-            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
-            opt = self.get_optimizer("dampedBFGS", save)
-            opt.initialize()
-            opt.load()
-            opt.insert_node(self.lower_end, #loc to insert
-                            len(self.nodes[0].geometry.atoms)) #num of atoms
+#        if self.control.gs_global_optimizer:
+#            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+#            opt = self.get_optimizer("dampedBFGS", save)
+#            opt.initialize()
+ #           opt.load()
+ #           opt.insert_node(self.lower_end, #loc to insert
+ #                           len(self.nodes[0].geometry.atoms)) #num of atoms
 
 
         if ((self.upper.param - self.lower.param)
@@ -81,13 +81,13 @@ class GrowingStringPath(Path):
             <= self.linsep * 1.5):
             return False
 
-        if self.control.gs_global_optimizer:
-            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
-            opt = self.get_optimizer("dampedBFGS", save)
-            opt.initialize()
-            opt.load()
-            opt.insert_node(self.lower_end, #loc to insert
-                            len(self.nodes[0].geometry.atoms)) #num of atoms
+ #       if self.control.gs_global_optimizer:
+ #           save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+ #           opt = self.get_optimizer("dampedBFGS", save)
+ #           opt.initialize()
+ #           opt.load()
+ #           opt.insert_node(self.lower_end, #loc to insert
+ #                           len(self.nodes[0].geometry.atoms)) #num of atoms
         
 
         return True
@@ -173,7 +173,7 @@ class GrowingStringPath(Path):
         if self.control.gs_global_optimizer:
             save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
             new_pos,opt = self.g_opt(
-                "dampedBFGS",
+                self.control.gs_optimizer,
                 positions,
                 forces,
                 save)
@@ -187,7 +187,7 @@ class GrowingStringPath(Path):
 
         lower_length = get_total_length(new_pos[:self.lower_end+1])
         upper_length = get_total_length(new_pos[self.upper_end:])
-        total_length = get_total_length(new_pos)
+        total_length = get_total_length(spline_pos(np.array(new_pos), np.linspace(0,1,100)))
 
 
         #decide whether to reparm locally or globally
@@ -267,7 +267,7 @@ class GrowingStringPath(Path):
         if self.control.gs_global_optimizer:
             save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
             new_pos,opt = self.g_opt(
-                "dampedBFGS",
+                self.control.gs_optimizer,
                 positions,
                 forces,
                 save)
