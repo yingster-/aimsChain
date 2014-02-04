@@ -16,6 +16,9 @@ from aimsChain.config import Control
 from aimsChain.interpolate import get_t
 from aimsChain.aimsio import write_mapped_aims, write_xyz, write_aims
 
+"""
+do a single aims run for the path given
+"""
 def run_aims(paths):
     global control
     while len(paths) > 0:
@@ -29,6 +32,7 @@ def run_aims(paths):
         filename = path[len(path)-path[::-1].index('/'):]+'.out'
         
         command = 'cd ' + path + ';' + control.run_aims + ' > ' + filename
+        #ugly but works. Directly call shell
         subprocess.call(command, shell=True)
         paths.remove(path)
         if control.restart:
@@ -36,7 +40,9 @@ def run_aims(paths):
         
     paths = []
 
-
+"""
+Ugly works
+"""
 def initial_interpolation():
     global control
     global path
@@ -75,6 +81,12 @@ def initial_interpolation():
     #fix the initial and final node    
     ininode.fixed = True
     finnode.fixed = True
+
+    if control.use_gs:
+        path.nodes = [ininode, finnode]
+        path.add_lower()
+        path.add_upper()
+        return
 
     #parse the externl geometry
     try:
@@ -188,17 +200,24 @@ def write_current():
 
 force = 10.0
 control = Control()
-if control.method == "neb":
-    path = NebPath(control=control)
-else:
-    path = StringPath(control=control)
-restart_stage = "mep"
+
+if control.use_gs:
+    path = GrowingStringPath(control=control)
+    restart_stage = "growing"
+    growing = True
+    gsforcelog = open("growing_forces.log", 'a')
+else:    
+    if control.method == "neb":
+        path = NebPath(control=control)
+    else:
+        path = StringPath(control=control)
+    restart_stage = "mep"
+    forcelog = open("forces.log", 'a')
+
 is_restart = control.restart and read_restart() 
 
 
-forcelog = open("forces.log", 'a')
-
-
+#check if the system is a restart
 if not is_restart:
     for directory in ["paths", "iterations", "optimized"]:
         if os.path.isdir(directory):
@@ -214,13 +233,66 @@ if not is_restart:
 
     forcelog.write("#Residual Forces in the system:\n")
     forcelog.flush()
-elif restart_stage == "grown" and control.restart:
-    restart_stage = "mep"
+    if control.use_gs:
+        gsforcelog.write("Iteration\tResidual force\t\tLower end force\t\tUpper end force \n")
+        gsforcelog.flush()
+
+if restart_stage == "growing":
+    while growing:
+
+        run_aims(path_to_run)
+        path.load_nodes()
+        force,low_force,high_force = path.move_nodes()
+        write_current()
+        curr_runs = path.runs
+
+        if low_force < control.gs_thres:
+            growing = path.add_lower() and growing
+        if high_force < control.gs_thres:
+            growing = path.add_upper() and growing
+
+        path.add_runs()
+        path_to_run = path.write_node()
+
+        gsforcelog.write('iteration%04d\t%16.8f\t%16.8f\t%16.8f \n' % 
+                       (curr_runs,force,low_force, high_force))
+        gsforcelog.flush()
+        path.write_path("iterations/path.dat")
+    run_aims(path_to_run)
+    write_current()
+    path.write_path("iterations/path.dat")
+
+
+    force = 10.0
+    gsforcelog.write("Path is grown.\n")
+    
+    gsforcelog.close()
+    path.write_path("iterations/path.dat")
+
+    try:
+        os.mkdir('grownstring')
+    except OSError:
+        pass
+
+    for i,dir in enumerate(path.get_paths()):
+        i+=1
+        dir_util.copy_tree(dir, os.path.join('grownstring', "image%03d" % i))
+    write_xyz("grownstring/path.xyz", path, control.xyz_lattice)
+
+    restart_stage = "grown"
+
+if restart_stage == "grown":
+
+    if control.method == "neb":
+        path = NebPath(control=control)
+    else:
+        path = StringPath(control=control)
+    path.read_path("iterations/path.dat")
+
     if control.resample and control.nimage != (len(path.nodes)-2):
         path.interpolate(control.nimage)
         path_to_run = path.write_all_node()
-elif restart_stage == "growing" and control.restart:
-    sys.exit()
+    restart_stage = "mep"
 
 if restart_stage == "mep":
     while force > control.thres:

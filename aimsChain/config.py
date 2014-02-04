@@ -27,6 +27,8 @@ class Control(object):
         self.climb_thres = None
         #climbing image or not
         self.use_climb = False
+        #use growing string or not
+        self.use_gs = False
         #climbing by interpolation
         self.climb_interp = True
         #climbing mode
@@ -113,6 +115,8 @@ class Control(object):
                     self.gs_thres = float(inp[1])
                 elif inp[0] == "use_climb":
                     self.use_climb = parse_bool(inp[1])
+                elif inp[0] == "use_growing_string":
+                    self.use_gs = parse_bool(inp[1])
                 elif inp[0] == "climb_mode":
                     self.climb_mode = int(inp[1])
                 elif inp[0] == "run_aims":
