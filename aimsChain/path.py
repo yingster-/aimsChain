@@ -3,6 +3,7 @@ This module defines the Path
 Path is a collection of nodes
 Path has all the inter-node functions
 """
+import pdb
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
 from aimsChain.config import Control
@@ -78,7 +79,8 @@ class Path(object):
         for node in self.nodes:
             dir = os.path.join(node.dir_pre, node.dir)
             geo_path = os.path.join(dir, "geometry.in")
-            output_path = os.path.join(dir, node.dir+".out")
+            output_path = os.path.join(dir, node.dir[node.dir.rfind('/')+1:]+".out")
+#            pdb.set_trace()
             atoms = read_aims(geo_path)
             node.geometry = atoms
             if os.path.isfile(output_path):

@@ -29,7 +29,7 @@ def run_aims(paths):
         if path[-1] == "/":
             path = path[:-1]
         #generate the name for output
-        filename = path[len(path)-path[::-1].index('/'):]+'.out'
+        filename = path[path.rfind('/')+1:]+'.out'
         
         command = 'cd ' + path + ';' + control.run_aims + ' > ' + filename
         #ugly but works. Directly call shell

@@ -14,10 +14,6 @@ from aimsChain.config import Control
 class Node(object):
     """
     Class for a single Node
-    Parameters:
-    geometry: the current Atoms object for the node
-    path: the path that the particular node blongs to
-    dir: the current dir that the node reads
     """
     def __init__(self, 
                  param = 0,
@@ -240,8 +236,6 @@ class Node(object):
         """
         create a directory for each node
         including geometry and control
-
-        TODO: also get restarts from previous run
         """
         import glob, os, shutil
         from aimsChain.aimsio import write_aims
@@ -271,6 +265,6 @@ class Node(object):
         """
         if (not self.fixed) or write_fixed:
             self.previous_dir = self.dir
-            self.dir = "aims-chain-node-%.5f-%06d" % (self.param, self.path.runs)
+            self.dir = "iteration%04d/" % self.path.runs + "aims-chain-node-%.5f-%06d" % (self.param, self.path.runs)
                 
 
