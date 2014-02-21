@@ -171,7 +171,7 @@ class GrowingStringPath(Path):
         positions = np.array(positions)
         
         if self.control.gs_global_optimizer:
-            save = os.path.join(self.nodes[0].dir_pre, "pgs.opt")
+            save = os.path.join(self.nodes[0].dir_pre, "gs.opt")
             new_pos,opt = self.g_opt(
                 self.control.gs_optimizer,
                 positions,
@@ -209,10 +209,8 @@ class GrowingStringPath(Path):
             new_t = np.linspace(0.0,1.0,len(temp_pos))
             
             if not (isinstance(opt, FDOptimize) and opt.finite_diff):
-#                log.write("Lower reparam, finite_diff at " + str(opt.finite_diff) + '\n')
                 temp_pos = spline_pos(temp_pos, new_t, old_t)
             else:
-#                log.write("No lower reparam, finite_diff at " + str(opt.finite_diff) + '\n')
                 pass
             new_pos2.extend(temp_pos)
 
@@ -221,13 +219,10 @@ class GrowingStringPath(Path):
             new_t = np.linspace(0.0,1.0,len(temp_pos))
             
             if not (isinstance(opt, FDOptimize) and opt.finite_diff):
-#                log.write("Upper reparam, finite_diff at " + str(opt.finite_diff) + '\n')
                 temp_pos = spline_pos(temp_pos, new_t, old_t)
             else:
-#                log.write("No upper reparam, finite_diff at " + str(opt.finite_diff) + '\n')                
                 pass
             new_pos2.extend(temp_pos)
-#        log.close()
 
 
         for i,position in enumerate(new_pos2):

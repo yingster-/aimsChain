@@ -194,7 +194,7 @@ class Control(object):
         if self.climb_thres == None:
             self.climb_thres = self.thres
         if self.gs_thres == None:
-            self.gs_thres = self.thres
+            self.gs_thres = self.thres*1.5
         if self.gs_nimage == None:
             self.gs_nimage = self.nimage
 

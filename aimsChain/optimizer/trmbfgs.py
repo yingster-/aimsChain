@@ -12,7 +12,7 @@ class trm(object):
         self.inistep=maxstep
         self.alpha = alpha
         self.epsilon = 1e-10
-        self.writelog = True
+        self.writelog = False
 
     def log(self, str_in=""):
         if not self.writelog:

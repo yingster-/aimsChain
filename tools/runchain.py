@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import subprocess
 import os
 import sys
@@ -292,9 +291,11 @@ if restart_stage == "grown":
         path = StringPath(control=control)
     path.read_path("iterations/path.dat")
     path.load_nodes()
-    if control.resample or control.nimage != (len(path.nodes)-2):
-        path.interpolate(control.nimage)
-        path_to_run = path.write_all_node()
+
+    #resample the path
+    path.interpolate(control.nimage)
+    path_to_run = path.write_all_node()
+    
     restart_stage = "mep"
 
 if restart_stage == "mep":

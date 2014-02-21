@@ -340,7 +340,7 @@ class Path(object):
                       + moving_nodes[climb_ind].param)
             old_t = np.append(old_t, old_t2[1:])
 
-
+            #only reparametrize if we are not in middle of finite difference step
             if not (isinstance(opt, FDOptimize) and opt.finite_diff):
                 new_pos = spline_pos(new_pos, new_t, old_t = old_t)
             for i, position in enumerate(new_pos):
@@ -401,19 +401,21 @@ class Path(object):
         #list of parameters
         else:
             old_t = []
-            new_t = np.linspace(0,1,n+2)[1:-1]
+            new_t = np.linspace(0,1,n+2)[1:-1].tolist()
             for node in self.nodes[1:-1]:
-                old_t.append(node.param)
+                old_t.append(round(node.param,5))
+                #keep only rounded vals so we don't need to worry about precision
+
             for i in new_t:
-                if i not in old_t:
+                if round(i,5) not in old_t: #not in old_t > add new node
+                    pdb.set_trace()
                     self.insert_node(i)
-            #check old t list for duplicates with new t
-            for i in old_t:
-                if i in new_t:
-                    old_t.remove(i)
+                else: #in old_t, remove it from old_t series
+                    old_t.remove(round(i,5))
+
             #remove old t
             for node in self.nodes[1:-1]:
-                if node.param in old_t:
+                if round(node.param,5) in old_t:
                     self.nodes.remove(node)
             
     

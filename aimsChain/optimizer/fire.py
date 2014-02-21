@@ -44,7 +44,12 @@ class FIRE(object):
         if self.v is None:
             self.v = np.zeros((len(f), 3))
         else:
-            vf = np.vdot(self.v,f)
+            try:
+                vf = np.vdot(self.v,f)
+            except ValueError:
+                self.v = np.zeros((len(f), 3))
+                vf = np.vdot(self.v,f)
+
             if vf > 0.0:
                 self.v = ((1.0 - self.a) * self.v + 
                           (self.a * f / 

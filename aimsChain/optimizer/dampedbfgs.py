@@ -26,8 +26,8 @@ class dampedBFGS(object):
             self.maxstep = maxstep
         self.restart = restart
         self.alpha = alpha
-        self.save_hess = True
-        self.writelog = True
+        self.save_hess = False
+        self.writelog = False
 
     def log(self, str_in=""):
         if not self.writelog:
@@ -45,7 +45,12 @@ class dampedBFGS(object):
         self.inserted_counter = 0
         self.iteration = 0
 
+    def reset_H(self,r):
+        self.H = np.eye(len(r)) * (1.0/self.alpha)
         
+    #this is for gs
+    #the function is currently not used
+    #since global doesn't provide all that much difference
     def insert_node(self, nth, n_atoms):
         self.log("Inserting new node")
         if self.H == None:
@@ -105,8 +110,11 @@ class dampedBFGS(object):
 
         if (self.f0 == None) or len(self.f0) == len(f):
             self.update(r, f)
-
-        dr = self.H.dot(f)
+        try:
+            dr = np.dot(self.H,f)
+        except ValueError:
+            self.reset_H(f)
+            dr = np.dot(self.H,f)
 
         dr = dr.reshape(-1,3)
         dr = self.determine_step(dr)
@@ -149,7 +157,7 @@ class dampedBFGS(object):
         f = f.flatten()
 
         if self.H is None:
-            self.H = np.eye(len(r)) * (1.0/self.alpha)
+            self.reset_H(r)
             return
 
         r0 = self.r0
@@ -160,7 +168,7 @@ class dampedBFGS(object):
         a2 = np.dot(f0,f0)
         if ((a1 >= a2) or (a2 == 0.0)) and (self.inserted_counter > 2):
             self.log("resetting the hessian")
-            self.H = np.eye(len(r)) * (1.0/self.alpha)
+            self.reset_H(r)
             return
 
 
@@ -176,18 +184,16 @@ class dampedBFGS(object):
         rhok=np.dot(yk,sk)
         
         theta = 1
-        thres = np.dot(sk,self.H).dot(sk)
+        thres = 0.2*np.dot(np.dot(sk,self.H),sk)
         
-#        if rhok <= 0:
-#            return
 
-        if rhok < 0.0:
+        if rhok < thres:
             self.log("damped")
-            return 
-#            theta = (0.8*thres)/(thres-rhok)
+#            return 
+            theta = (0.8*thres)/(thres-rhok)
 
-#        yk =  theta * yk + (1 -theta)*np.dot(self.H,sk)
-#        rhok = np.dot(yk,sk)
+            yk =  theta * yk + (1 -theta)*np.dot(self.H,sk)
+            rhok = np.dot(yk,sk)
 
 
 
