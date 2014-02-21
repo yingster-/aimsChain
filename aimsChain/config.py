@@ -53,15 +53,15 @@ class Control(object):
         #resample external geometry
         self.resample = False
         #restart or not
-        self.restart = False
+        self.restart = True
         #optimizer for evolving path
         self.optimizer = "dampedBFGS"
         #optimizer for evolving path
         self.gs_optimizer = "fire"
         #global optimizer for gs
-        self.gs_global_optimizer = True
+        self.gs_global_optimizer = False
         #optimizer for climbing image
-        self.climb_optimizer = "dampedBFGS"
+        self.climb_optimizer = "trm"
         #control file for climbing image
         self.climb_control = "control.in"
         #lbfgs parameters
@@ -115,7 +115,7 @@ class Control(object):
                     self.gs_thres = float(inp[1])
                 elif inp[0] == "use_climb":
                     self.use_climb = parse_bool(inp[1])
-                elif inp[0] == "use_growing_string":
+                elif inp[0] == "use_gs_method":
                     self.use_gs = parse_bool(inp[1])
                 elif inp[0] == "climb_mode":
                     self.climb_mode = int(inp[1])
@@ -124,7 +124,7 @@ class Control(object):
                 elif inp[0] == "external_geometry":
                     self.ext_geo = inp[1]
                 elif inp[0] == "method":
-                    if inp[1] in ['NEB', 'neb', 'Neb']:
+                    if inp[1].lower() == "neb":
                         self.method = "neb"
                     else:
                         self.method = 'string'

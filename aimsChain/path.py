@@ -145,10 +145,12 @@ class Path(object):
             old_t.append(node.param)
             positions.append(node.positions)
         
+
         new_t = list(old_t)
         new_t.append(float(param))
         new_t.sort()
         ind = new_t.index(param)
+
         positions = spline_pos(np.array(positions), new_t, old_t)
 
         new_node = Node(param = param,
@@ -403,11 +405,13 @@ class Path(object):
             for node in self.nodes[1:-1]:
                 old_t.append(node.param)
             for i in new_t:
-                if not (i in old_t):
+                if i not in old_t:
                     self.insert_node(i)
+            #check old t list for duplicates with new t
             for i in old_t:
                 if i in new_t:
                     old_t.remove(i)
+            #remove old t
             for node in self.nodes[1:-1]:
                 if node.param in old_t:
                     self.nodes.remove(node)

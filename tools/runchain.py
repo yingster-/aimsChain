@@ -10,6 +10,7 @@ import cPickle as cp
 
 from aimsChain.string_path import StringPath
 from aimsChain.neb_path import NebPath
+from aimsChain.gs_path import GrowingStringPath
 from aimsChain.node import Node
 from aimsChain.aimsio import read_aims
 from aimsChain.config import Control
@@ -41,7 +42,7 @@ def run_aims(paths):
     paths = []
 
 """
-Ugly works
+Ugly works for initial interpolation of path
 """
 def initial_interpolation():
     global control
@@ -62,6 +63,7 @@ def initial_interpolation():
         curr_pos = finnode.positions
         fin_pos = []
         for i,atom_pos in enumerate(curr_pos):
+            #large separation to start with
             dis = 1000000
             pos = None
             for a in [-1,0,1]:
@@ -212,7 +214,8 @@ else:
     else:
         path = StringPath(control=control)
     restart_stage = "mep"
-    forcelog = open("forces.log", 'a')
+
+forcelog = open("forces.log", 'a')
 
 is_restart = control.restart and read_restart() 
 
@@ -288,8 +291,8 @@ if restart_stage == "grown":
     else:
         path = StringPath(control=control)
     path.read_path("iterations/path.dat")
-
-    if control.resample and control.nimage != (len(path.nodes)-2):
+    path.load_nodes()
+    if control.resample or control.nimage != (len(path.nodes)-2):
         path.interpolate(control.nimage)
         path_to_run = path.write_all_node()
     restart_stage = "mep"

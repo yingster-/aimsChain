@@ -1,5 +1,7 @@
 """
-The growing string path
+The pulled growing string path
+This wasn't a successful  method
+removed for future versions
 """
 import numpy as np
 from aimsChain.utility import vmag, vunit, vproj
