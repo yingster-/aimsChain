@@ -1,7 +1,7 @@
 run_aims mpiexec -ppn 8 -n $NSLOTS /u/yyao/bin/aims.020213.scalapack.mpi.x
 method string
-initial_file ini.in
-final_file fin.in
-force_thres 0.1
-n_images 20
-external_geometry extgeo.lst
+force_thres 0.2
+use_climb true
+n_images 6
+climb_thres 0.05
+

@@ -1,7 +1,7 @@
 run_aims mpiexec -ppn 8 -n $NSLOTS /u/yyao/bin/aims.020213.scalapack.mpi.x
 method string
-force_thres 0.2
-use_climb true
-n_images 6
-climb_thres 0.05
+force_thres 0.01
+initial_file ini.in
+final_file fin.in
+n_images 8
 

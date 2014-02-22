@@ -2,7 +2,7 @@
 #$ -j y
 #$ -cwd
 #$ -m n
-#$ -pe impi_hydra 72
+#$ -pe impi_hydra 16
 #$ -l h_rt=86400
 #$ -l h_vmem=22G
 #$ -o out.log

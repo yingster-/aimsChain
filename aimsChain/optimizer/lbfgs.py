@@ -198,15 +198,15 @@ class LBFGS(object):
                 f0 = self.f0
 
         #reset direction
+        
+        if np.shape(f) != np.shape(f0):
+            self.initialize()
         if self.iteration > 0:
             a1 = abs(np.dot(f.reshape(-1),f0.reshape(-1)))
             a2 = np.dot(f0.reshape(-1),f0.reshape(-1))
 
             if (a1 >= 0.5*a2) or (a2 == 0.0):
-                self.y = []
-                self.s = []
-                self.rho = []
-                self.iteration = 0
+                self.initialize()
         
         if self.iteration > 0:
             s0 = r.reshape(-1) - r0.reshape(-1)

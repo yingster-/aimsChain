@@ -93,7 +93,7 @@ class BFGS(object):
 
         r = r.flatten()
         f = f.flatten()
-        if self.H is None:
+        if self.H is None or np.shape(r) != np.shape(self.r0):
             self.H = np.eye(len(r)) * (1.0/self.alpha)
             self.r0 = r
             self.f0 = f

@@ -155,10 +155,14 @@ def read_restart():
         restart.close()
     return file_exist
 
-def write_current():
+def write_current(final = False):
     global path
-    dir_name = "iteration%04d" % path.runs
-    dir_name = os.path.join("paths", dir_name)
+    if not final:
+        dir_name = "iteration%04d" % path.runs
+        dir_name = os.path.join("paths", dir_name)
+    else:
+        dir_name = "optimized"
+        
     try:
         os.mkdir(dir_name)
     except OSError:
@@ -173,27 +177,35 @@ def write_current():
         fixed.append(node.fixed)
         i += 1
         file_name = os.path.join(dir_name, "image%03d.in" % i)
-        if control.map_unit_cell:
-            write_mapped_aims(file_name, node.geometry)
-        else:
-            write_aims(file_name, node.geometry)
+        if not final:
+            if control.map_unit_cell:
+                write_mapped_aims(file_name, node.geometry)
+            else:
+                write_aims(file_name, node.geometry)
     ener = np.array(ener) - ener[0]
     enerfile = open(os.path.join(dir_name, "ener.lst"), 'w')
+    enerfile.write("#image num.\tenergy(eV)\t status\n")
     for i,energy in enumerate(ener):
         enerfile.write("image%03d\t%.10f" % (i+1, energy))
         if climb[i]:
             enerfile.write("\t CLIMB")
-        if fixed[i]:
+        elif fixed[i]:
             enerfile.write("\t FIXED")
+        else:
+            enerfile.write("\t NORMAL")
         enerfile.write("\n")
     enerfile.close()
     pathfile = open(os.path.join(dir_name, "path.lst") ,'w')
+    pathfile.write("#image num.\tpath\t\t\t\t\t\t\t status\n")
     for i,item in enumerate(path.get_paths()):
         pathfile.write("image%03d\t%s" % (i+1,item))
         if climb[i]:
             pathfile.write("\t CLIMB")
-        if fixed[i]:
+        elif fixed[i]:
             pathfile.write("\t FIXED")
+        else:
+            pathfile.write("\t NORMAL")
+
         pathfile.write("\n")
     pathfile.close()
         
@@ -294,6 +306,7 @@ if restart_stage == "grown":
 
     #resample the path
     path.interpolate(control.nimage)
+    path.add_runs()
     path_to_run = path.write_all_node()
     
     restart_stage = "mep"
@@ -354,4 +367,4 @@ except OSError:
 for i,dir in enumerate(path.get_paths()):
     i+=1
     dir_util.copy_tree(dir, os.path.join('optimized', "image%03d" % i))
-write_xyz("optimized/path.xyz", path, control.xyz_lattice)
+write_current(True)

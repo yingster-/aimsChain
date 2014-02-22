@@ -92,7 +92,7 @@ class trm(object):
         r = r.flatten()
         f = f.flatten()
 
-        if self.H is None:
+        if self.H is None or len(r) != len(self.r0):
             self.H = np.eye(len(f)) * self.alpha
             self.r0 = r
             self.f0 = f

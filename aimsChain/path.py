@@ -252,7 +252,7 @@ class Path(object):
             else:
                 t_thres = old_t[mint_ind] - old_t[mint_ind-1]
             t_thres = t_thres/5.0
-            #if it's not within the center 1/2 of the path, then we say it's too close
+            #if it's not within the center 3/5 of the path, then we say it's too close
             #to a existing node, and we use that instead
             if np.nanmin(np.absolute(change_t)) < t_thres:
                 self.nodes[mint_ind].fixed = False
@@ -410,7 +410,6 @@ class Path(object):
 
             for i in new_t:
                 if round(i,5) not in old_t: #not in old_t > add new node
-                    pdb.set_trace()
                     self.insert_node(i)
                 else: #in old_t, remove it from old_t series
                     old_t.remove(round(i,5))

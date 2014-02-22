@@ -80,6 +80,9 @@ class CG(FDOptimize):
         if np.abs(f).max() < 1e-5:
             return x #Too small to go on
 
+        if self.N != None and np.shape(x) != np.shape(self.x0):
+            self.initialize()
+
         if self.N == None: #degree of freedom
             self.N = int(len(f)) #threshold set for restarting
         if self.d == None: #initial direction
