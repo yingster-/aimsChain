@@ -214,21 +214,24 @@ def write_current(final = False):
 force = 10.0
 control = Control()
 
-if control.use_gs:
-    path = GrowingStringPath(control=control)
-    restart_stage = "growing"
-    growing = True
-    gsforcelog = open("growing_forces.log", 'a')
-else:    
-    if control.method == "neb":
-        path = NebPath(control=control)
-    else:
-        path = StringPath(control=control)
-    restart_stage = "mep"
+if control.method == "neb":
+    path = NebPath(control=control)
+else:
+    path = StringPath(control=control)
+restart_stage = "mep"
 
-forcelog = open("forces.log", 'a')
 
 is_restart = control.restart and read_restart() 
+
+
+if control.use_gs:
+    if not is_restart or restart_stage == "growing":
+        path = GrowingStringPath(control=control)
+        read_restart()
+        restart_stage = "growing"
+        growing = True
+        gsforcelog = open("growing_forces.log", 'a')
+    
 
 
 #check if the system is a restart
@@ -245,8 +248,6 @@ if not is_restart:
     path_to_run = path.write_all_node()
     path.write_path("iterations/path.dat")
 
-    forcelog.write("#Residual Forces in the system:\n")
-    forcelog.flush()
     if control.use_gs:
         gsforcelog.write("Iteration\tResidual force\t\tLower end force\t\tUpper end force \n")
         gsforcelog.flush()
@@ -310,6 +311,12 @@ if restart_stage == "grown":
     path_to_run = path.write_all_node()
     
     restart_stage = "mep"
+
+forcelog = open("forces.log", 'a')
+if not is_restart:
+    forcelog.write("#Residual Forces in the system:\n")
+    forcelog.flush()
+
 
 if restart_stage == "mep":
     while force > control.thres:

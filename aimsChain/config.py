@@ -57,7 +57,7 @@ class Control(object):
         #optimizer for evolving path
         self.optimizer = "dampedBFGS"
         #optimizer for evolving path
-        self.gs_optimizer = "fire"
+        self.gs_optimizer = "trm"
         #global optimizer for gs
         self.gs_global_optimizer = False
         #optimizer for climbing image
@@ -65,11 +65,11 @@ class Control(object):
         #control file for climbing image
         self.climb_control = "control.in"
         #lbfgs parameters
-        self.lbfgs_alpha = 100.0
+        self.lbfgs_alpha = 120.0
         self.lbfgs_memory = 30
         self.lbfgs_maxstep = 0.04
         #bfgs parameters
-        self.bfgs_alpha = 100.0
+        self.bfgs_alpha = 120.0
         self.bfgs_maxstep = 0.04
         #fire parameters
         self.fire_dt = 0.02
