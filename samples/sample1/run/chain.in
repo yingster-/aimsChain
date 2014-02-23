@@ -8,17 +8,18 @@ initial_file ini.in
 #final geometry
 final_file fin.in
 
-optimizer trm
-
 ####################################################
 ##General settings for task
 ####################################################
 #Method to use, neb/string
 method string
 #number of images to use
-n_images 10
+n_images 6
 #convergence criterion for forces, in eV/A
 force_thres 0.05
+#optimizer for neb/string method
+optimizer dampedBFGS
+
 
 ####################################################
 ##External starting geometries
@@ -26,7 +27,8 @@ force_thres 0.05
 #list of external geometries
 #external_geometry extgeo.lst
 #whether to resample the external geometry
-resample true
+#resample true
+
 
 ####################################################
 ##Climbing image setting
@@ -35,19 +37,21 @@ resample true
 use_climb on
 #convergence criterion for climbing image, in eV/A
 climb_thres 0.01
-climb_optimizer trm
+
+####################################################
+##Growing string method
+####################################################
+#whether to use GS method or not
+use_gs_method false
+#number of images for GS method
+#gs_n_images 10
+#threshold for GS method
+#gs_thres 0.3
 
 ####################################################
 ##Periodic system setting
 ####################################################
 #interpolate across periodic boundary
-periodic_interpolation true
+#periodic_interpolation true
 
 
-####################################################
-##Growing String
-####################################################
-use_gs_method off
-gs_n_images 30
-gs_global_optimizer false
-gs_optimizer dampedbfgs

@@ -1,4 +1,4 @@
-j = 49
+j = 63
 if (!exist("i")) i = 0
 set palette rgbformulae 33,13,10
 set xrange[0.4:3.4]
