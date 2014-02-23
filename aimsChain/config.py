@@ -20,7 +20,7 @@ class Control(object):
         #periodic interpolation
         self.periodic_interp = False
         #threshold for convergence
-        self.thres = 0.1
+        self.thres = 0.2
         #threshold for convergence
         self.gs_thres = None
         #threshold for climbing image convergence
@@ -61,7 +61,7 @@ class Control(object):
         #global optimizer for gs
         self.gs_global_optimizer = False
         #optimizer for climbing image
-        self.climb_optimizer = "trm"
+        self.climb_optimizer = "fire"
         #control file for climbing image
         self.climb_control = "control.in"
         #lbfgs parameters
@@ -103,9 +103,9 @@ class Control(object):
                     self.ini = inp[1]
                 elif inp[0] == "final_file":
                     self.fin = inp[1]
-                elif inp[0] == "n_images":
+                elif inp[0] == "n_images" or inp[0] == "n_image":
                     self.nimage = int(inp[1])
-                elif inp[0] == "gs_n_images":
+                elif inp[0] == "gs_n_images" or inp[0] == "gs_n_image":
                     self.gs_nimage = int(inp[1])
                 elif inp[0] == "force_thres":
                     self.thres = float(inp[1])

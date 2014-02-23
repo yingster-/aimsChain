@@ -265,6 +265,6 @@ class Node(object):
         """
         if (not self.fixed) or write_fixed:
             self.previous_dir = self.dir
-            self.dir = "iteration%04d/" % self.path.runs + "aims-chain-node-%.5f-%06d" % (self.param, self.path.runs)
+            self.dir = "iteration%04d/" % self.path.runs + "aims-chain-node-%.5f" % (self.param)
                 
 
