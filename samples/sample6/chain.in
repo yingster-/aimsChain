@@ -14,11 +14,11 @@ final_file fin.in
 #Method to use, neb/string
 method string
 #number of images to use
-n_images 10
+n_images 6
 #convergence criterion for forces, in eV/A
 force_thres 0.15
 #optimizer for neb/string method
-optimizer dampedBFGS
+optimizer trm
 
 
 ####################################################

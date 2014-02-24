@@ -197,7 +197,8 @@ class Control(object):
             self.gs_thres = self.thres*1.5
         if self.gs_nimage == None:
             self.gs_nimage = self.nimage
-
+        if self.ext_geo != None:
+            self.use_gs = False
 def parse_bool(string):
 
     if string.lower() in ['true','.true.', 'y', 'yes', '1', 't','on']:
