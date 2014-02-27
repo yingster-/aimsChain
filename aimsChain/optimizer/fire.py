@@ -1,5 +1,6 @@
 import numpy as np
 import cPickle as cp
+from aimsChain.utility import vmag, vunit
 
 
 class FIRE(object):
@@ -52,8 +53,7 @@ class FIRE(object):
 
             if vf > 0.0:
                 self.v = ((1.0 - self.a) * self.v + 
-                          (self.a * f / 
-                           np.sqrt(np.vdot(f, f)) * np.sqrt(np.vdot(self.v, self.v))))
+                          (self.a * vunit(f) * vmag(self.v)))
                 if self.Nsteps > self.Nmin:
                     self.dt = min(self.dt * self.finc, self.dtmax)
                     self.a *= self.fa
