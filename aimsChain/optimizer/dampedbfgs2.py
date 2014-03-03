@@ -28,7 +28,8 @@ class dampedBFGS2(object):
         self.alpha = alpha
         self.save_hess = False
         self.writelog = True
-        self.safe_radius = -1.0
+        self.safe_radius = 0.04
+        self.direc = None
 
     def log(self, str_in=""):
         if not self.writelog:
@@ -85,7 +86,8 @@ class dampedBFGS2(object):
             hess = open(self.restart, 'r')
             try:
                 (self.H, self.r0, self.f0, self.inserted, 
-                 self.inserted_counter, self.iteration) = cp.load(hess)
+                 self.inserted_counter, self.iteration, 
+                 self.safe_radius, self.direc) = cp.load(hess)
             except:
                 self.initialize()
             hess.close()
@@ -96,7 +98,8 @@ class dampedBFGS2(object):
         """
         hess = open(self.restart, 'w')
         cp.dump((self.H, self.r0, self.f0, self.inserted, 
-                 self.inserted_counter, self.iteration),
+                 self.inserted_counter, self.iteration,
+                 self.safe_radius, self.direc),
                 hess)
         hess.close()
 
@@ -117,14 +120,15 @@ class dampedBFGS2(object):
             self.reset_H(f)
             dr = np.dot(self.H,f)
             
+        self.log("current vmag(dr) is "+str(vmag(dr)))
+        self.log("current safe radius is " + str(self.safe_radius))
+        
         if self.safe_radius < 0:
             self.safe_radius = vmag(dr)
-        elif vmag(dr) >= self.safe_radius:
-            self.log("current vmag(dr) is "+str(vmag(dr)))
-            self.log("current safe radius is "+str(self.safe_radius))
+        if vmag(dr) > self.safe_radius:
             dr = vunit(dr)*self.safe_radius
-        elif vmag(dr) <= 0.5*self.safe_radius:
-            self.safe_radius = 1.1*vmag(dr)
+        
+        self.direc = vunit(dr)
 
         dr = dr.reshape(-1,3)
         dr = self.determine_step(dr)
@@ -142,17 +146,19 @@ class dampedBFGS2(object):
 
         return r+dr
 
-    def determine_step(self, dr):
+    def determine_step(self, dr, maxlength=None):
         """Determine step to take according to maxstep
         
         Normalize all steps as the largest step. This way
         we still move along the eigendirection.
         """
+        if maxlength == None:
+            maxlength = self.maxstep
         
         steplengths = (dr**2).sum(1)**0.5
         maxsteplength = np.max(steplengths)
-        if maxsteplength >= self.maxstep:
-            self.log("step too large, reducing to "+str(self.maxstep))
+        if maxsteplength >= maxlength:
+            self.log("step too large, reducing to "+str(maxlength))
             dr *= self.maxstep / maxsteplength
         
         return dr
@@ -163,7 +169,6 @@ class dampedBFGS2(object):
         if self.inserted:
             self.inserted = False
             return
-        self.inserted_counter += 1
         r = r.flatten()
         f = f.flatten()
 
@@ -177,13 +182,11 @@ class dampedBFGS2(object):
 
         a1 = abs(np.dot(f,f))
         a2 = np.dot(f0,f0)
-        if ((a1 >= a2) or (a2 == 0.0)) and (self.inserted_counter > 2):
+        
+        if (a1 >= a2) or (a2 == 0.0):
             self.log("resetting the hessian")
             self.reset_H(r)
-            self.safe_radius *= 0.5
             return
-        self.safe_radius *= 1.1
-
 
         sk = r.reshape(-1) - r0.reshape(-1)
 
@@ -226,4 +229,11 @@ class dampedBFGS2(object):
         
         self.H = (np.dot(A1,np.dot(self.H,A2)) 
                   + rhok * np.outer(sk,sk))
-        
+
+        quality = np.dot(vunit(r-r0),vunit(f))
+        self.log("quality: " + str(quality))
+        if quality > 0.5:
+            self.safe_radius *= 1.1
+        else:
+            self.safe_radius *= 0.5
+        self.log("safe radius: " + str(self.safe_radius))
