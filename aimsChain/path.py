@@ -272,8 +272,7 @@ class Path(object):
         if climb_mode == 2:
             target_node.prev.fixed = False
             target_node.next.fixed = False
-        self.nodes[0].fixed = True
-        self.nodes[-1].fixed = True
+
 
 
     def move_climb(self):
