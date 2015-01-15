@@ -255,6 +255,10 @@ class Path(object):
             #if it's not within the center 3/5 of the path, then we say it's too close
             #to a existing node, and we use that instead
             if np.nanmin(np.absolute(change_t)) < t_thres:
+                if mint_ind == 0:
+                    mint_ind += 1
+                elif mint_ind == len(self.nodes)-1:
+                    mint_ind -= 1
                 self.nodes[mint_ind].fixed = False
                 self.nodes[mint_ind].climb = True
                 target_node = self.nodes[mint_ind]
@@ -268,7 +272,8 @@ class Path(object):
         if climb_mode == 2:
             target_node.prev.fixed = False
             target_node.next.fixed = False
-            
+        self.nodes[0].fixed = True
+        self.nodes[-1].fixed = True
 
 
     def move_climb(self):

@@ -131,6 +131,7 @@ class dampedBFGS2(object):
         self.direc = vunit(dr)
 
         dr = dr.reshape(-1,3)
+
         dr = self.determine_step(dr)
         dr = np.reshape(dr, np.shape(r))
 
@@ -183,8 +184,16 @@ class dampedBFGS2(object):
         a1 = abs(np.dot(f,f))
         a2 = np.dot(f0,f0)
         
-        if (a1 >= a2) or (a2 == 0.0):
-            self.log("resetting the hessian")
+#        if (a1 >= a2) or (a2 == 0.0):
+#            self.log("resetting the hessian")
+#            self.reset_H(r)
+            return
+        quality = np.dot(self.direc,vunit(f))
+        self.log("quality: " + str(quality))
+        if quality > 0.6:
+            self.safe_radius *= 1.1
+        else:
+            self.safe_radius *= 0.5
             self.reset_H(r)
             return
 
