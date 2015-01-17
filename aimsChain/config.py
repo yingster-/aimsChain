@@ -55,7 +55,7 @@ class Control(object):
         #restart or not
         self.restart = True
         #optimizer for evolving path
-        self.optimizer = "dampedBFGS"
+        self.optimizer = "trm"
         #optimizer for evolving path
         self.gs_optimizer = "trm"
         #global optimizer for gs
