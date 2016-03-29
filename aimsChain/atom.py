@@ -85,11 +85,11 @@ class Atom(object):
         """
         if isinstance(constraint, basestring):
             if 'x' in constraint:
-                self.__constraint = self.constraint&np.array([0,1,1])
+                self.__constraint = self.constraint & np.array([0,1,1])
             if 'y' in constraint:
-                self.__constraint = self.constraint&np.array([1,0,1])
+                self.__constraint = self.constraint & np.array([1,0,1])
             if 'z' in constraint:
-                self.__constraint = self.constraint&np.array([1,1,0])
+                self.__constraint = self.constraint & np.array([1,1,0])
             if constraint == 'all':
                 self.__constraint = np.array([0,0,0])
         else:

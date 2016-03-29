@@ -1,9 +1,14 @@
-"""
-This module provide the parser for control file
-control name is "chain.in"
-"""
+################################################################################
+# This module provide the parser for config file.
+# Config file should be named "chain.in".
+################################################################################
 import os 
 import string
+
+################################################################################
+# A class for storing/parsing config. Very bare bone and lacks robustness.
+# Should be sufficient for our use case. 
+################################################################################
 class Control(object):
     """
     generic class for control
@@ -199,9 +204,13 @@ class Control(object):
             self.gs_nimage = self.nimage
         if self.ext_geo != None:
             self.use_gs = False
-def parse_bool(string):
 
-    if string.lower() in ['true','.true.', 'y', 'yes', '1', 't','on']:
+################################################################################
+# Parse a string into boolean.
+# Return true for some common variations, false otherwise. 
+################################################################################
+def parse_bool(input_string):
+    if input_string.lower() in ['true','.true.', 'y', 'yes', '1', 't','on']:
         return True
     else:
         return False

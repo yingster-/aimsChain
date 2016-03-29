@@ -61,7 +61,7 @@ class trm(object):
         D,S = eigh(self.H)
         StF = np.dot(f,S)
         
-        #This is from the Fortran version, but is  useless for us.
+        #This is from the Fortran version, but is useless for us.
         #The original purpose was to report details about hessian
         #As well as deal with zero modes & machine epsilon 
         #But for a Chain these makes no sense, since we are not

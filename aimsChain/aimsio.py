@@ -1,17 +1,22 @@
-"""
-This module defines basic io functions for aims
-Read/Write aims geometry
-Read aims output
-"""
+################################################################################
+# This module provides basic input/output functionalities for interacting with
+# aims. Including:
+# - Read/Write aims geometry
+# - Parse aims output
+# Theoretically aimsChain can be combined with other ab initio programs by
+# implementing a corresponding i/o module. 
+################################################################################
+
+
+################################################################################
+# Parse aims geometry file into the aimsChain Atoms object.
+# Stores: atom symbol, coordinates, lattice vector, and constraints
+# filename: path to aims geometry
+# return the converted Atoms object. 
+################################################################################
 def read_aims(filename):
-    """
-    Import aims geometry file into the standard atoms type
-    Store all info other than comments, this includes constraints, spins, and etc.
-    Lattice vector is stored separately.
-    """
     from aimsChain.atom import Atoms
     from aimsChain.atom import Atom
-    import numpy as np
 
     atoms = Atoms()
     geo = open(filename,'r')

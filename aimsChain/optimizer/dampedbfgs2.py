@@ -187,7 +187,7 @@ class dampedBFGS2(object):
 #        if (a1 >= a2) or (a2 == 0.0):
 #            self.log("resetting the hessian")
 #            self.reset_H(r)
-            return
+#            return
         quality = np.dot(self.direc,vunit(f))
         self.log("quality: " + str(quality))
         if quality > 0.6:

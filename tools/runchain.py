@@ -1,7 +1,13 @@
 #!/usr/bin/env python
+
+################################################################################
+# This is the main script that runs aimsChain.
+# Module-wide global variables are used throughout the script to avoid passing
+# args around. Care should be taken when modifying these variables. 
+################################################################################
+
 import subprocess
 import os
-import sys
 import distutils.dir_util as dir_util
 import shutil
 import numpy as np
@@ -16,9 +22,9 @@ from aimsChain.config import Control
 from aimsChain.interpolate import get_t
 from aimsChain.aimsio import write_mapped_aims, write_xyz, write_aims
 
-"""
-do a single aims run for the path given
-"""
+################################################################################
+# Do a single aims run inside the given directory.
+################################################################################
 def run_aims(paths):
     global control
     while len(paths) > 0:
@@ -32,7 +38,7 @@ def run_aims(paths):
         filename = path[path.rfind('/')+1:]+'.out'
         
         command = 'cd ' + path + ';' + control.run_aims + ' > ' + filename
-        #ugly but works. Directly call shell
+        #ugly but works. Make a shell call directly. 
         subprocess.call(command, shell=True)
         paths.remove(path)
         if control.restart:
@@ -40,12 +46,14 @@ def run_aims(paths):
         
     paths = []
 
-"""
-Ugly works for initial interpolation of path
-"""
+################################################################################
+# Ugly works for initial interpolation of path.
+# We read the initial/final geometry, 
+################################################################################
 def initial_interpolation():
     global control
     global path
+
     #set the initial and final image
     ininode = Node(param = 0.0, 
                    geometry = read_aims(control.ini))
@@ -89,7 +97,7 @@ def initial_interpolation():
         path.add_upper()
         return
 
-    #parse the externl geometry
+    # parse the externl geometry
     try:
         nodes = [ininode]
         if control.ext_geo and os.path.isfile(str(control.ext_geo)):
@@ -120,11 +128,11 @@ def initial_interpolation():
             #then resample the path
             if control.resample and control.nimage != (len(nodes)-2):
                 path.interpolate(control.nimage)
-
+    # revert to linear interpolation if anything failed. This could be
+    # -file doesn't exist
+    # -wrong format
+    # -interpolation error
     except:
-
-        print '!Error interprating the external geometries\n'
-        print '!Using standard interpolation method for initial geometries\n'
         nodes = [ininode, finnode]
 
 
@@ -222,7 +230,6 @@ restart_stage = "mep"
 
 
 is_restart = control.restart and read_restart() 
-
 
 if control.use_gs:
     if not is_restart or restart_stage == "growing":
